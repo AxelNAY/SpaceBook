@@ -26,15 +26,11 @@ func CreateResource(c echo.Context) error {
 		resource.Capacity = 1
 		resource.Category = "none"
 	}
-
-
 	config.DB.Create(&resource)
-
 	notification := models.Notification{
 		Type:    "resource",
 		Message: "A new resource has been created",
 	}
-
 	config.DB.Create(&notification)
 	return c.JSON(http.StatusCreated, resource)
 }

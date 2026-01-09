@@ -17,18 +17,35 @@ func SetupRoutes(e *echo.Echo) {
 	})
 
 	// =====================
-	// Public / User routes
+	// Auth routes (public)
+	// =====================
+
+	auth := e.Group("/auth")
+	auth.POST("/register", handlers.Register)
+	auth.POST("/login", handlers.Login)
+
+	// =====================
+	// Public routes
 	// =====================
 
 	e.GET("/resources", handlers.GetResources)
-	e.POST("/reservations", handlers.CreateReservation)
-	e.GET("/notifications", handlers.GetUserNotifications)
 
 	// =====================
-	// Admin routes
+	// Protected routes (authenticated users)
+	// =====================
+
+	protected := e.Group("")
+	protected.Use(middleware.JWTAuth)
+
+	protected.POST("/reservations", handlers.CreateReservation)
+	protected.GET("/notifications", handlers.GetUserNotifications)
+
+	// =====================
+	// Admin routes (authenticated + admin role)
 	// =====================
 
 	admin := e.Group("/admin")
+	admin.Use(middleware.JWTAuth)
 	admin.Use(middleware.AdminOnly)
 
 	// Resources
@@ -38,6 +55,11 @@ func SetupRoutes(e *echo.Echo) {
 	// Reservations
 	admin.GET("/reservations", handlers.GetAdminReservations)
 	admin.PUT("/reservations/:id/approve", handlers.ApproveReservation)
+	admin.PUT("/reservations/:id/reject", handlers.RejectReservation)
+
+	// Users
+	admin.GET("/users", handlers.GetUsers)
+	admin.DELETE("/user/:id", handlers.DeleteUser)
 
 	// Notifications
 	admin.GET("/notifications", handlers.GetAdminNotifications)

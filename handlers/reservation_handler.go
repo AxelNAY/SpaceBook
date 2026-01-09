@@ -20,6 +20,43 @@ func CreateReservation(c echo.Context) error {
 		})
 	}
 
+	// Validation des dates
+	if reservation.StartAt.After(reservation.EndAt) || reservation.StartAt.Equal(reservation.EndAt) {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"error": "La date de début doit être antérieure à la date de fin",
+		})
+	}
+
+	// Récupérer la ressource pour connaître sa capacité
+	var resource models.Resource
+	if err := config.DB.First(&resource, "id = ?", reservation.ResourceID).Error; err != nil {
+		return c.JSON(http.StatusNotFound, echo.Map{
+			"error": "Resource not found",
+		})
+	}
+
+	// Compter les réservations qui chevauchent ce créneau (non rejetées)
+	var overlappingCount int64
+	if err := config.DB.Model(&models.Reservation{}).
+		Where("resource_id = ?", reservation.ResourceID).
+		Where("status != ?", "rejected").
+		Where("start_at < ? AND end_at > ?", reservation.EndAt, reservation.StartAt).
+		Count(&overlappingCount).Error; err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"error": "Failed to check availability",
+		})
+	}
+
+	// Vérifier si la capacité est atteinte
+	if int(overlappingCount) >= resource.Capacity {
+		return c.JSON(http.StatusConflict, echo.Map{
+			"error":     "Resource fully booked for this time slot",
+			"capacity":  resource.Capacity,
+			"booked":    overlappingCount,
+			"available": 0,
+		})
+	}
+
 	reservation.ID = uuid.New()
 	reservation.Status = "pending"
 
