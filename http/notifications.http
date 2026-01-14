@@ -1,0 +1,40 @@
+### ======================
+### NOTIFICATIONS
+### ======================
+
+### Variables
+@baseUrl = http://localhost:8000
+@userToken = VOTRE_TOKEN_JWT_UTILISATEUR
+@adminToken = VOTRE_TOKEN_JWT_ADMIN
+@userId = 00000000-0000-0000-0000-000000000000
+
+### -----------------------
+### Obtenir les notifications d'un utilisateur
+### -----------------------
+GET {{baseUrl}}/notifications?userId={{userId}}
+Authorization: Bearer {{userToken}}
+
+### -----------------------
+### Lister toutes les notifications (admin)
+### -----------------------
+GET {{baseUrl}}/admin/notifications
+Authorization: Bearer {{adminToken}}
+
+### -----------------------
+### Marquer une notification comme lue (admin)
+### Remplacez {id} par l'UUID de la notification
+### -----------------------
+PUT {{baseUrl}}/admin/notifications/00000000-0000-0000-0000-000000000000/read
+Authorization: Bearer {{adminToken}}
+
+### -----------------------
+### Test - Notifications sans userId (doit echouer)
+### -----------------------
+GET {{baseUrl}}/notifications
+Authorization: Bearer {{userToken}}
+
+### -----------------------
+### Test - Notification inexistante
+### -----------------------
+PUT {{baseUrl}}/admin/notifications/99999999-9999-9999-9999-999999999999/read
+Authorization: Bearer {{adminToken}}

@@ -1,53 +1,58 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8080",
+  baseURL: "http://localhost:8000",
 });
 
+// Intercepteur pour ajouter le token JWT à chaque requête
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Auth
+export const login = (data) => api.post("/auth/login", data);
+export const register = (data) => api.post("/auth/register", data);
+
+// Resources
 export const getResources = () => api.get("/resources");
 
+// Reservations (user)
 export const createReservation = (data) =>
   api.post("/reservations", {
     ...data,
-    startAt: new Date(data.startAt).toISOString(),
-    endAt: new Date(data.endAt).toISOString(),
+    start_at: new Date(data.start_at).toISOString(),
+    end_at: new Date(data.end_at).toISOString(),
   });
 
-export const getAdminNotifications = () =>
-  api.get("/admin/notifications", {
-    headers: { "X-ROLE": "admin" },
-  });
+export const getUserReservations = (userId) =>
+  api.get(`/reservations?userId=${userId}`);
 
+// Notifications (user)
+export const getUserNotifications = (userId) =>
+  api.get(`/notifications?userId=${userId}`);
+
+// Admin - Notifications
+export const getAdminNotifications = () => api.get("/admin/notifications");
 export const markNotificationRead = (id) =>
-  api.put(`/admin/notifications/${id}/read`, null, {
-    headers: { "X-ROLE": "admin" },
-  });
+  api.put(`/admin/notifications/${id}/read`);
 
-export const createAdminResource = (data) =>
-  api.post("/admin/resources", data, {
-    headers: { "X-ROLE": "admin" },
-  });
+// Admin - Resources
+export const createAdminResource = (data) => api.post("/admin/resources", data);
+export const deleteAdminResource = (id) => api.delete(`/admin/resources/${id}`);
 
-export const getReservations = () => api.get("/reservations");
-
+// Admin - Reservations
+export const getAdminReservations = () => api.get("/admin/reservations");
 export const approveReservation = (id) =>
-  api.put(`/admin/reservations/${id}/approve`, null, {
-    headers: { "X-ROLE": "admin" },
-  });
+  api.put(`/admin/reservations/${id}/approve`);
+export const rejectReservation = (id) =>
+  api.put(`/admin/reservations/${id}/reject`);
 
-export const deleteAdminResource = (id) =>
-  api.delete(`/admin/resources/${id}`, {
-    headers: { "X-ROLE": "admin" },
-  });
-
-export const getAdminReservations = () =>
-  axios.get("http://localhost:8080/admin/reservations", {
-    headers: { "X-ROLE": "admin" }
-  });
-
-export const deleteResource = (id) =>
-  axios.delete(`http://localhost:8080/admin/resources/${id}`, {
-    headers: { "X-ROLE": "admin" }
-  });
+// Admin - Users
+export const getAdminUsers = () => api.get("/admin/users");
+export const deleteAdminUser = (id) => api.delete(`/admin/user/${id}`);
 
 export default api;

@@ -18,12 +18,11 @@ func GetUsers(c echo.Context) error {
 	var users []models.User
 
 	if err := config.DB.
-		Preload("User").
 		Order("created_at DESC").
 		Find(&users).Error; err != nil {
 
 		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"error": "Failed to fetch users",
+			"error": "Échec de la récupération des utilisateurs",
 		})
 	}
 
@@ -44,13 +43,13 @@ func DeleteUser(c echo.Context) error {
 
 	if count > 0 {
 		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "User cannot be deleted because it has reservations",
+			"error": "L'utilisateur ne peut pas être supprimé car il a des réservations",
 		})
 	}
 
 	if err := config.DB.Delete(&models.User{}, "id = ?", id).Error; err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"error": "Failed to delete user",
+			"error": "Échec de la suppression de l'utilisateur",
 		})
 	}
 

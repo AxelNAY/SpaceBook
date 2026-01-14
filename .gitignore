@@ -22,3 +22,7 @@ spacebook
 *.dylib
 *.test
 *.out
+
+# Project specific
+maquettes/
+curl_commands.txt

@@ -1,0 +1,62 @@
+### ======================
+### AUTHENTIFICATION
+### ======================
+
+### Variables
+@baseUrl = http://localhost:8000
+@contentType = application/json
+
+### -----------------------
+### Inscription d'un utilisateur
+### -----------------------
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+    "email": "test@example.com",
+    "username": "testuser",
+    "password": "password123"
+}
+
+### -----------------------
+### Connexion utilisateur
+### -----------------------
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "email": "test@example.com",
+    "password": "password123"
+}
+
+### -----------------------
+### Connexion admin (pour obtenir un token admin)
+### -----------------------
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "email": "admin@spacebook.com",
+    "password": "admin123"
+}
+
+### -----------------------
+### Test - Email manquant
+### -----------------------
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+    "username": "testuser",
+    "password": "password123"
+}
+
+### -----------------------
+### Test - Mot de passe manquant
+### -----------------------
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "email": "test@example.com"
+}

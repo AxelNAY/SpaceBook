@@ -18,7 +18,7 @@ func CreateResource(c echo.Context) error {
 	var resource models.Resource
 	if err := c.Bind(&resource); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid payload",
+			"error": "Données invalides",
 		})
 	}
 
@@ -29,7 +29,7 @@ func CreateResource(c echo.Context) error {
 	config.DB.Create(&resource)
 	notification := models.Notification{
 		Type:    "resource",
-		Message: "A new resource has been created",
+		Message: "Une nouvelle ressource a été créée",
 	}
 	config.DB.Create(&notification)
 	return c.JSON(http.StatusCreated, resource)
@@ -45,13 +45,13 @@ func DeleteResource(c echo.Context) error {
 
 	if count > 0 {
 		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "Resource cannot be deleted because it has reservations",
+			"error": "La ressource ne peut pas être supprimée car elle a des réservations",
 		})
 	}
 
 	if err := config.DB.Delete(&models.Resource{}, "id = ?", id).Error; err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"error": "Failed to delete resource",
+			"error": "Échec de la suppression de la ressource",
 		})
 	}
 

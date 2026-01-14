@@ -227,7 +227,7 @@ func TestCapacityCheck(t *testing.T) {
 		var response map[string]interface{}
 		json.Unmarshal(rec.Body.Bytes(), &response)
 
-		if response["error"] != "Resource fully booked for this time slot" {
+		if response["error"] != "Ressource complète pour ce créneau horaire" {
 			t.Errorf("Expected capacity error message, got: %v", response["error"])
 		}
 	})

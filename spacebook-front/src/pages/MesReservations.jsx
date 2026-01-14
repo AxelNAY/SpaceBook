@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
-import { getAdminReservations, approveReservation, rejectReservation } from "../api/api";
+import { useAuth } from "../context/AuthContext";
+import { getUserReservations } from "../api/api";
 
-export default function AdminReservations() {
+export default function MesReservations() {
+  const { user } = useAuth();
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
+    if (!user?.id) return;
+
     try {
-      const res = await getAdminReservations();
+      const res = await getUserReservations(user.id);
       setReservations(res.data || []);
     } catch (err) {
       console.error(err);
@@ -19,7 +23,7 @@ export default function AdminReservations() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [user]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -35,29 +39,11 @@ export default function AdminReservations() {
   const getStatusBadge = (status) => {
     switch (status) {
       case "approved":
-        return <span className="badge badge-approved">Approuve</span>;
+        return <span className="badge badge-approved">Approuvee</span>;
       case "rejected":
-        return <span className="badge badge-rejected">Refuse</span>;
+        return <span className="badge badge-rejected">Refusee</span>;
       default:
         return <span className="badge badge-pending">En attente</span>;
-    }
-  };
-
-  const handleApprove = async (id) => {
-    try {
-      await approveReservation(id);
-      load();
-    } catch (err) {
-      alert(err.response?.data?.error || "Erreur lors de l'approbation");
-    }
-  };
-
-  const handleReject = async (id) => {
-    try {
-      await rejectReservation(id);
-      load();
-    } catch (err) {
-      alert(err.response?.data?.error || "Erreur lors du refus");
     }
   };
 
@@ -71,7 +57,7 @@ export default function AdminReservations() {
 
   return (
     <div className="page-container">
-      <h1 className="page-title">Reservations</h1>
+      <h1 className="page-title">Mes Reservations</h1>
 
       {reservations.length === 0 ? (
         <p style={{ textAlign: "center", color: "var(--text-gray)" }}>
@@ -91,14 +77,8 @@ export default function AdminReservations() {
                 <th style={{ padding: "16px 24px", textAlign: "left", fontWeight: 600 }}>
                   Horaire
                 </th>
-                <th style={{ padding: "16px 24px", textAlign: "left", fontWeight: 600 }}>
-                  Demande par
-                </th>
                 <th style={{ padding: "16px 24px", textAlign: "center", fontWeight: 600 }}>
                   Statut
-                </th>
-                <th style={{ padding: "16px 24px", textAlign: "center", fontWeight: 600 }}>
-                  Actions
                 </th>
               </tr>
             </thead>
@@ -118,31 +98,8 @@ export default function AdminReservations() {
                     <div>{formatDate(reservation.start_at)}</div>
                     <div style={{ color: "var(--text-gray)" }}>au {formatDate(reservation.end_at)}</div>
                   </td>
-                  <td style={{ padding: "16px 24px" }}>
-                    {reservation.user?.username || "Utilisateur"}
-                  </td>
                   <td style={{ padding: "16px 24px", textAlign: "center" }}>
                     {getStatusBadge(reservation.status)}
-                  </td>
-                  <td style={{ padding: "16px 24px", textAlign: "center" }}>
-                    <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
-                      <button
-                        className="btn btn-primary"
-                        style={{ padding: "8px 16px", fontSize: "14px" }}
-                        onClick={() => handleApprove(reservation.id)}
-                        disabled={reservation.status === "approved"}
-                      >
-                        Accepter
-                      </button>
-                      <button
-                        className="btn btn-danger"
-                        style={{ padding: "8px 16px", fontSize: "14px" }}
-                        onClick={() => handleReject(reservation.id)}
-                        disabled={reservation.status === "rejected"}
-                      >
-                        Refuser
-                      </button>
-                    </div>
                   </td>
                 </tr>
               ))}

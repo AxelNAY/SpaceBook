@@ -46,14 +46,14 @@ func JWTAuth(next echo.HandlerFunc) echo.HandlerFunc {
 		authHeader := c.Request().Header.Get("Authorization")
 		if authHeader == "" {
 			return c.JSON(http.StatusUnauthorized, map[string]string{
-				"error": "Authorization header required",
+				"error": "En-tête d'autorisation requis",
 			})
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		if tokenString == authHeader {
 			return c.JSON(http.StatusUnauthorized, map[string]string{
-				"error": "Bearer token required",
+				"error": "Token Bearer requis",
 			})
 		}
 
@@ -63,14 +63,14 @@ func JWTAuth(next echo.HandlerFunc) echo.HandlerFunc {
 
 		if err != nil || !token.Valid {
 			return c.JSON(http.StatusUnauthorized, map[string]string{
-				"error": "Invalid or expired token",
+				"error": "Token invalide ou expiré",
 			})
 		}
 
 		claims, ok := token.Claims.(*JWTClaims)
 		if !ok {
 			return c.JSON(http.StatusUnauthorized, map[string]string{
-				"error": "Invalid token claims",
+				"error": "Données du token invalides",
 			})
 		}
 

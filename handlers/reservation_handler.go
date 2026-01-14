@@ -11,12 +11,37 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+func GetUserReservations(c echo.Context) error {
+	userId := c.QueryParam("userId")
+
+	if userId == "" {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"error": "userId est requis",
+		})
+	}
+
+	var reservations []models.Reservation
+
+	if err := config.DB.
+		Preload("Resource").
+		Where("user_id = ?", userId).
+		Order("created_at DESC").
+		Find(&reservations).Error; err != nil {
+
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"error": "Échec de la récupération des réservations",
+		})
+	}
+
+	return c.JSON(http.StatusOK, reservations)
+}
+
 func CreateReservation(c echo.Context) error {
 	var reservation models.Reservation
 
 	if err := c.Bind(&reservation); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "Invalid request body",
+			"error": "Corps de requête invalide",
 		})
 	}
 
@@ -31,7 +56,7 @@ func CreateReservation(c echo.Context) error {
 	var resource models.Resource
 	if err := config.DB.First(&resource, "id = ?", reservation.ResourceID).Error; err != nil {
 		return c.JSON(http.StatusNotFound, echo.Map{
-			"error": "Resource not found",
+			"error": "Ressource introuvable",
 		})
 	}
 
@@ -43,14 +68,14 @@ func CreateReservation(c echo.Context) error {
 		Where("start_at < ? AND end_at > ?", reservation.EndAt, reservation.StartAt).
 		Count(&overlappingCount).Error; err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"error": "Failed to check availability",
+			"error": "Échec de la vérification de disponibilité",
 		})
 	}
 
 	// Vérifier si la capacité est atteinte
 	if int(overlappingCount) >= resource.Capacity {
 		return c.JSON(http.StatusConflict, echo.Map{
-			"error":     "Resource fully booked for this time slot",
+			"error":     "Ressource complète pour ce créneau horaire",
 			"capacity":  resource.Capacity,
 			"booked":    overlappingCount,
 			"available": 0,
@@ -62,9 +87,21 @@ func CreateReservation(c echo.Context) error {
 
 	if err := config.DB.Create(&reservation).Error; err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"error": "Failed to create reservation",
+			"error": "Échec de la création de la réservation",
 		})
 	}
+
+	// Récupérer l'utilisateur pour le message de notification
+	var user models.User
+	config.DB.First(&user, "id = ?", reservation.UserID)
+
+	// Notification pour les admins (sans UserID = visible par tous les admins)
+	notification := models.Notification{
+		Type:    "reservation",
+		Message: "Nouvelle demande de réservation de " + user.Username + " pour " + resource.Name,
+		IsRead:  false,
+	}
+	config.DB.Create(&notification)
 
 	return c.JSON(http.StatusCreated, reservation)
 }
@@ -84,7 +121,7 @@ func GetAdminReservations(c echo.Context) error {
 		Find(&reservations).Error; err != nil {
 
 		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"error": "Failed to fetch reservations",
+			"error": "Échec de la récupération des réservations",
 		})
 	}
 
@@ -101,7 +138,7 @@ func ApproveReservation(c echo.Context) error {
 	reservationID, err := uuid.Parse(idParam)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "Invalid reservation ID",
+			"error": "ID de réservation invalide",
 		})
 	}
 
@@ -112,7 +149,7 @@ func ApproveReservation(c echo.Context) error {
 		First(&reservation, "id = ?", reservationID).Error; err != nil {
 
 		return c.JSON(http.StatusNotFound, echo.Map{
-			"error": "Reservation not found",
+			"error": "Réservation introuvable",
 		})
 	}
 
@@ -122,7 +159,7 @@ func ApproveReservation(c echo.Context) error {
 
 	if err := config.DB.Save(&reservation).Error; err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"error": "Failed to approve reservation",
+			"error": "Échec de l'approbation de la réservation",
 		})
 	}
 
@@ -132,7 +169,7 @@ func ApproveReservation(c echo.Context) error {
 	notification := models.Notification{
 		UserID:  &userID,
 		Type:    "reservation",
-		Message: "Your reservation has been approved",
+		Message: "Votre réservation a été approuvée",
 		IsRead:  false,
 	}
 
@@ -151,14 +188,14 @@ func RejectReservation(c echo.Context) error {
 	reservationID, err := uuid.Parse(idParam)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "Invalid reservation ID",
+			"error": "ID de réservation invalide",
 		})
 	}
 
 	var reservation models.Reservation
 	if err := config.DB.First(&reservation, "id = ?", reservationID).Error; err != nil {
 		return c.JSON(http.StatusNotFound, echo.Map{
-			"error": "Reservation not found",
+			"error": "Réservation introuvable",
 		})
 	}
 
@@ -167,7 +204,7 @@ func RejectReservation(c echo.Context) error {
 
 	if err := config.DB.Save(&reservation).Error; err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"error": "Failed to reject reservation",
+			"error": "Échec du rejet de la réservation",
 		})
 	}
 
@@ -176,7 +213,7 @@ func RejectReservation(c echo.Context) error {
 	notification := models.Notification{
 		UserID:  &userID,
 		Type:    "reservation",
-		Message: "Your reservation has been rejected",
+		Message: "Votre réservation a été refusée",
 		IsRead:  false,
 	}
 

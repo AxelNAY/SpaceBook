@@ -1,0 +1,11 @@
+### ======================
+### HEALTH CHECK
+### ======================
+
+### Variables
+@baseUrl = http://localhost:8000
+
+### -----------------------
+### Verifier que l'API fonctionne
+### -----------------------
+GET {{baseUrl}}/health

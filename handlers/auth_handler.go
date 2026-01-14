@@ -31,13 +31,13 @@ func Register(c echo.Context) error {
 	var req RegisterRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid payload",
+			"error": "Données invalides",
 		})
 	}
 
 	if req.Email == "" || req.Password == "" || req.Username == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Email, username and password are required",
+			"error": "Email, nom d'utilisateur et mot de passe requis",
 		})
 	}
 
@@ -45,7 +45,7 @@ func Register(c echo.Context) error {
 	var existingUser models.User
 	if err := config.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
 		return c.JSON(http.StatusConflict, map[string]string{
-			"error": "Email already registered",
+			"error": "Cet email est déjà utilisé",
 		})
 	}
 
@@ -53,7 +53,7 @@ func Register(c echo.Context) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Failed to hash password",
+			"error": "Échec du hachage du mot de passe",
 		})
 	}
 
@@ -66,7 +66,7 @@ func Register(c echo.Context) error {
 
 	if err := config.DB.Create(&user).Error; err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Failed to create user",
+			"error": "Échec de la création de l'utilisateur",
 		})
 	}
 
@@ -74,7 +74,7 @@ func Register(c echo.Context) error {
 	token, err := middleware.GenerateToken(user.ID, user.Email, user.Role)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Failed to generate token",
+			"error": "Échec de la génération du token",
 		})
 	}
 
@@ -88,13 +88,13 @@ func Login(c echo.Context) error {
 	var req LoginRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid payload",
+			"error": "Données invalides",
 		})
 	}
 
 	if req.Email == "" || req.Password == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Email and password are required",
+			"error": "Email et mot de passe requis",
 		})
 	}
 
@@ -102,14 +102,14 @@ func Login(c echo.Context) error {
 	var user models.User
 	if err := config.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "Invalid credentials",
+			"error": "Identifiants invalides",
 		})
 	}
 
 	// Verify password
 	if err := bcrypt.CompareHashAndPassword(user.Password, []byte(req.Password)); err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{
-			"error": "Invalid credentials",
+			"error": "Identifiants invalides",
 		})
 	}
 
@@ -117,7 +117,7 @@ func Login(c echo.Context) error {
 	token, err := middleware.GenerateToken(user.ID, user.Email, user.Role)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Failed to generate token",
+			"error": "Échec de la génération du token",
 		})
 	}
 

@@ -1,0 +1,110 @@
+### ======================
+### RESERVATIONS
+### ======================
+
+### Variables
+@baseUrl = http://localhost:8000
+@contentType = application/json
+# Remplacez par votre token JWT utilisateur
+@userToken = VOTRE_TOKEN_JWT_UTILISATEUR
+# Remplacez par votre token JWT admin
+@adminToken = VOTRE_TOKEN_JWT_ADMIN
+# Remplacez par un UUID de ressource valide
+@resourceId = 00000000-0000-0000-0000-000000000000
+# Remplacez par un UUID d'utilisateur valide
+@userId = 00000000-0000-0000-0000-000000000000
+
+### -----------------------
+### Creer une reservation (utilisateur connecte)
+### -----------------------
+POST {{baseUrl}}/reservations
+Content-Type: {{contentType}}
+Authorization: Bearer {{userToken}}
+
+{
+    "resource_id": "{{resourceId}}",
+    "user_id": "{{userId}}",
+    "start_at": "2025-02-01T09:00:00Z",
+    "end_at": "2025-02-01T12:00:00Z"
+}
+
+### -----------------------
+### Creer une reservation pour demain
+### -----------------------
+POST {{baseUrl}}/reservations
+Content-Type: {{contentType}}
+Authorization: Bearer {{userToken}}
+
+{
+    "resource_id": "{{resourceId}}",
+    "user_id": "{{userId}}",
+    "start_at": "2025-02-02T14:00:00Z",
+    "end_at": "2025-02-02T16:00:00Z"
+}
+
+### -----------------------
+### Lister toutes les reservations (admin)
+### -----------------------
+GET {{baseUrl}}/admin/reservations
+Authorization: Bearer {{adminToken}}
+
+### -----------------------
+### Approuver une reservation (admin)
+### Remplacez {id} par l'UUID de la reservation
+### -----------------------
+PUT {{baseUrl}}/admin/reservations/00000000-0000-0000-0000-000000000000/approve
+Authorization: Bearer {{adminToken}}
+
+### -----------------------
+### Rejeter une reservation (admin)
+### Remplacez {id} par l'UUID de la reservation
+### -----------------------
+PUT {{baseUrl}}/admin/reservations/00000000-0000-0000-0000-000000000000/reject
+Authorization: Bearer {{adminToken}}
+
+### -----------------------
+### Test - Date de fin avant date de debut (doit echouer)
+### -----------------------
+POST {{baseUrl}}/reservations
+Content-Type: {{contentType}}
+Authorization: Bearer {{userToken}}
+
+{
+    "resource_id": "{{resourceId}}",
+    "user_id": "{{userId}}",
+    "start_at": "2025-02-01T14:00:00Z",
+    "end_at": "2025-02-01T10:00:00Z"
+}
+
+### -----------------------
+### Test - Reservation sans token (doit echouer)
+### -----------------------
+POST {{baseUrl}}/reservations
+Content-Type: {{contentType}}
+
+{
+    "resource_id": "{{resourceId}}",
+    "user_id": "{{userId}}",
+    "start_at": "2025-02-01T09:00:00Z",
+    "end_at": "2025-02-01T12:00:00Z"
+}
+
+### -----------------------
+### Test - Ressource inexistante
+### -----------------------
+POST {{baseUrl}}/reservations
+Content-Type: {{contentType}}
+Authorization: Bearer {{userToken}}
+
+{
+    "resource_id": "99999999-9999-9999-9999-999999999999",
+    "user_id": "{{userId}}",
+    "start_at": "2025-02-01T09:00:00Z",
+    "end_at": "2025-02-01T12:00:00Z"
+}
+
+### -----------------------
+### Test - ID de reservation invalide (approve)
+### -----------------------
+PUT {{baseUrl}}/admin/reservations/invalid-uuid/approve
+Authorization: Bearer {{adminToken}}

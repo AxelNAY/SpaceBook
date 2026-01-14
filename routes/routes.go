@@ -38,6 +38,7 @@ func SetupRoutes(e *echo.Echo) {
 	protected.Use(middleware.JWTAuth)
 
 	protected.POST("/reservations", handlers.CreateReservation)
+	protected.GET("/reservations", handlers.GetUserReservations)
 	protected.GET("/notifications", handlers.GetUserNotifications)
 
 	// =====================

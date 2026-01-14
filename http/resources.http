@@ -1,0 +1,81 @@
+### ======================
+### RESSOURCES
+### ======================
+
+### Variables
+@baseUrl = http://localhost:8000
+@contentType = application/json
+# Remplacez par votre token JWT admin
+@adminToken = VOTRE_TOKEN_JWT_ADMIN
+
+### -----------------------
+### Lister toutes les ressources (public)
+### -----------------------
+GET {{baseUrl}}/resources
+
+### -----------------------
+### Creer une salle (admin)
+### -----------------------
+POST {{baseUrl}}/admin/resources
+Content-Type: {{contentType}}
+Authorization: Bearer {{adminToken}}
+
+{
+    "name": "Salle de reunion A",
+    "type": "room"
+}
+
+### -----------------------
+### Creer un equipement (admin)
+### -----------------------
+POST {{baseUrl}}/admin/resources
+Content-Type: {{contentType}}
+Authorization: Bearer {{adminToken}}
+
+{
+    "name": "Videoprojecteur HD",
+    "type": "equipment",
+    "category": "audiovisuel",
+    "capacity": 5
+}
+
+### -----------------------
+### Creer une salle de conference (admin)
+### -----------------------
+POST {{baseUrl}}/admin/resources
+Content-Type: {{contentType}}
+Authorization: Bearer {{adminToken}}
+
+{
+    "name": "Salle de conference B",
+    "type": "room"
+}
+
+### -----------------------
+### Supprimer une ressource (admin)
+### Remplacez {id} par l'UUID de la ressource
+### -----------------------
+DELETE {{baseUrl}}/admin/resources/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{adminToken}}
+
+### -----------------------
+### Test - Creation sans token (doit echouer)
+### -----------------------
+POST {{baseUrl}}/admin/resources
+Content-Type: {{contentType}}
+
+{
+    "name": "Test",
+    "type": "room"
+}
+
+### -----------------------
+### Test - Donnees invalides
+### -----------------------
+POST {{baseUrl}}/admin/resources
+Content-Type: {{contentType}}
+Authorization: Bearer {{adminToken}}
+
+{
+    "invalid": "data"
+}

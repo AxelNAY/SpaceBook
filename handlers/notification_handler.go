@@ -14,7 +14,7 @@ func GetUserNotifications(c echo.Context) error {
 
 	if userId == "" {
 		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "userId is required",
+			"error": "userId est requis",
 		})
 	}
 
@@ -26,7 +26,7 @@ func GetUserNotifications(c echo.Context) error {
 		Find(&notifications).Error; err != nil {
 
 		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"error": "Failed to fetch notifications",
+			"error": "Échec de la récupération des notifications",
 		})
 	}
 

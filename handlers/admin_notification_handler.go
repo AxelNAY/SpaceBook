@@ -26,11 +26,11 @@ func MarkNotificationAsRead(c echo.Context) error {
 
 	if result.RowsAffected == 0 {
 		return c.JSON(http.StatusNotFound, map[string]string{
-			"error": "Notification not found",
+			"error": "Notification introuvable",
 		})
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{
-		"message": "Notification marked as read",
+		"message": "Notification marquée comme lue",
 	})
 }

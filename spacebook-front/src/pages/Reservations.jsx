@@ -1,63 +1,110 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { getResources, createReservation } from "../api/api";
-import {
-  Container, Typography, Select, MenuItem,
-  TextField, Button, FormControl, InputLabel
-} from "@mui/material";
+import { useAuth } from "../context/AuthContext";
 
 export default function Reservations() {
+  const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [resources, setResources] = useState([]);
   const [form, setForm] = useState({
-    userID: "9b8e5a0a-7c0f-4f3c-9c3a-0e6e3e5f8b91",
-    resourceID: "",
-    startAt: "",
-    endAt: "",
+    resource_id: location.state?.resource?.ID || "",
+    user_id: user?.id || "",
+    start_at: "",
+    end_at: "",
   });
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    getResources().then(res => setResources(res.data));
+    getResources().then((res) => setResources(res.data || []));
   }, []);
 
-  const submit = () => {
-    createReservation(form)
-      .then(() => alert("Reservation created"))
-      .catch(err => alert(err.response?.data?.error));
+  useEffect(() => {
+    if (user) {
+      setForm((f) => ({ ...f, user_id: user.id }));
+    }
+  }, [user]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess(false);
+
+    try {
+      await createReservation(form);
+      setSuccess(true);
+      setTimeout(() => navigate("/mes-reservations"), 1500);
+    } catch (err) {
+      setError(err.response?.data?.error || "Erreur lors de la reservation");
+    }
   };
 
   return (
-    <Container sx={{ mt: 4 }}>
-      <Typography variant="h4">New Reservation</Typography>
+    <div className="page-container">
+      <h1 className="page-title">Nouvelle Reservation</h1>
 
-      <FormControl fullWidth sx={{ mt: 2 }}>
-        <InputLabel>Resource</InputLabel>
-        <Select
-          value={form.resourceID}
-          label="Resource"
-          onChange={e => setForm({ ...form, resourceID: e.target.value })}
-        >
-          {resources.map(r => (
-            <MenuItem key={r.ID} value={r.ID}>{r.Name}</MenuItem>
-          ))}
-        </Select>
-      </FormControl>
+      <div className="card" style={{ maxWidth: "500px", margin: "0 auto", padding: "32px" }}>
+        {error && (
+          <p style={{ color: "var(--danger-red)", textAlign: "center", marginBottom: "16px" }}>
+            {error}
+          </p>
+        )}
 
-      <TextField
-        type="datetime-local"
-        fullWidth
-        sx={{ mt: 2 }}
-        onChange={e => setForm({ ...form, startAt: e.target.value })}
-      />
+        {success && (
+          <p style={{ color: "var(--success-green)", textAlign: "center", marginBottom: "16px" }}>
+            Reservation creee avec succes !
+          </p>
+        )}
 
-      <TextField
-        type="datetime-local"
-        fullWidth
-        sx={{ mt: 2 }}
-        onChange={e => setForm({ ...form, endAt: e.target.value })}
-      />
+        <form onSubmit={handleSubmit}>
+          <label style={{ display: "block", marginBottom: "8px", fontWeight: 600 }}>
+            Ressource
+          </label>
+          <select
+            className="form-select"
+            value={form.resource_id}
+            onChange={(e) => setForm({ ...form, resource_id: e.target.value })}
+            required
+          >
+            <option value="">Selectionner une ressource</option>
+            {resources.map((r) => (
+              <option key={r.ID} value={r.ID}>
+                {r.Name} ({r.Type === "room" ? "Salle" : "Equipement"})
+              </option>
+            ))}
+          </select>
 
-      <Button variant="contained" sx={{ mt: 3 }} onClick={submit}>
-        Create reservation
-      </Button>
-    </Container>
+          <label style={{ display: "block", marginBottom: "8px", fontWeight: 600 }}>
+            Date et heure de debut
+          </label>
+          <input
+            type="datetime-local"
+            className="form-input"
+            value={form.start_at}
+            onChange={(e) => setForm({ ...form, start_at: e.target.value })}
+            required
+          />
+
+          <label style={{ display: "block", marginBottom: "8px", fontWeight: 600 }}>
+            Date et heure de fin
+          </label>
+          <input
+            type="datetime-local"
+            className="form-input"
+            value={form.end_at}
+            onChange={(e) => setForm({ ...form, end_at: e.target.value })}
+            required
+          />
+
+          <div style={{ textAlign: "center", marginTop: "24px" }}>
+            <button type="submit" className="btn btn-primary">
+              Creer la reservation
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }

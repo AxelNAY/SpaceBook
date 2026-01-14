@@ -1,0 +1,32 @@
+### ======================
+### UTILISATEURS (Admin)
+### ======================
+
+### Variables
+@baseUrl = http://localhost:8000
+@adminToken = VOTRE_TOKEN_JWT_ADMIN
+
+### -----------------------
+### Lister tous les utilisateurs (admin)
+### -----------------------
+GET {{baseUrl}}/admin/users
+Authorization: Bearer {{adminToken}}
+
+### -----------------------
+### Supprimer un utilisateur (admin)
+### Remplacez {id} par l'UUID de l'utilisateur
+### -----------------------
+DELETE {{baseUrl}}/admin/user/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{adminToken}}
+
+### -----------------------
+### Test - Lister sans token (doit echouer)
+### -----------------------
+GET {{baseUrl}}/admin/users
+
+### -----------------------
+### Test - Supprimer avec token utilisateur non-admin (doit echouer)
+### -----------------------
+# @userToken = TOKEN_UTILISATEUR_NON_ADMIN
+# DELETE {{baseUrl}}/admin/user/00000000-0000-0000-0000-000000000000
+# Authorization: Bearer {{userToken}}

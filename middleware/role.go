@@ -11,7 +11,7 @@ func AdminOnly(next echo.HandlerFunc) echo.HandlerFunc {
 		role, ok := c.Get("role").(string)
 		if !ok || role != "admin" {
 			return c.JSON(http.StatusForbidden, map[string]string{
-				"error": "Admin access required",
+				"error": "Accès administrateur requis",
 			})
 		}
 		return next(c)

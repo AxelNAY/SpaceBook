@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
-import { getResources, deleteAdminResource } from "../api/api";
+import { getAdminUsers, deleteAdminUser } from "../api/api";
 
-export default function AdminResources() {
-  const [resources, setResources] = useState([]);
+export default function AdminUsers() {
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     try {
-      const res = await getResources();
-      setResources(res.data || []);
+      const res = await getAdminUsers();
+      setUsers(res.data || []);
     } catch (err) {
       console.error(err);
-      setResources([]);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -21,14 +21,21 @@ export default function AdminResources() {
     load();
   }, []);
 
-  const handleDelete = async (resourceId, resourceName) => {
-    if (!window.confirm(`Supprimer la ressource "${resourceName}" ?`)) return;
+  const getRoleBadge = (role) => {
+    if (role === "admin") {
+      return <span className="badge badge-pending">Admin</span>;
+    }
+    return <span className="badge badge-available">User</span>;
+  };
+
+  const handleDelete = async (userId, username) => {
+    if (!window.confirm(`Supprimer l'utilisateur "${username}" ?`)) return;
 
     try {
-      await deleteAdminResource(resourceId);
+      await deleteAdminUser(userId);
       load();
     } catch (err) {
-      alert(err.response?.data?.error || "Echec de la suppression");
+      alert(err.response?.data?.error || "Erreur lors de la suppression");
     }
   };
 
@@ -42,11 +49,11 @@ export default function AdminResources() {
 
   return (
     <div className="page-container">
-      <h1 className="page-title">Ressources</h1>
+      <h1 className="page-title">Utilisateurs</h1>
 
-      {resources.length === 0 ? (
+      {users.length === 0 ? (
         <p style={{ textAlign: "center", color: "var(--text-gray)" }}>
-          Aucune ressource
+          Aucun utilisateur
         </p>
       ) : (
         <div className="card" style={{ overflow: "hidden" }}>
@@ -57,13 +64,10 @@ export default function AdminResources() {
                   Nom
                 </th>
                 <th style={{ padding: "16px 24px", textAlign: "left", fontWeight: 600 }}>
-                  Type
-                </th>
-                <th style={{ padding: "16px 24px", textAlign: "left", fontWeight: 600 }}>
-                  Categorie
+                  Email
                 </th>
                 <th style={{ padding: "16px 24px", textAlign: "center", fontWeight: 600 }}>
-                  Capacite
+                  Role
                 </th>
                 <th style={{ padding: "16px 24px", textAlign: "center", fontWeight: 600 }}>
                   Action
@@ -71,28 +75,25 @@ export default function AdminResources() {
               </tr>
             </thead>
             <tbody>
-              {resources.map((resource) => (
+              {users.map((user) => (
                 <tr
-                  key={resource.ID}
+                  key={user.id}
                   style={{ borderBottom: "1px solid #e5e5e5" }}
                 >
                   <td style={{ padding: "16px 24px", fontWeight: 600 }}>
-                    {resource.Name}
+                    {user.username}
                   </td>
                   <td style={{ padding: "16px 24px" }}>
-                    {resource.Type === "room" ? "Salle" : "Equipement"}
-                  </td>
-                  <td style={{ padding: "16px 24px" }}>
-                    {resource.Category || "-"}
+                    {user.email}
                   </td>
                   <td style={{ padding: "16px 24px", textAlign: "center" }}>
-                    {resource.Capacity || 1}
+                    {getRoleBadge(user.role)}
                   </td>
                   <td style={{ padding: "16px 24px", textAlign: "center" }}>
                     <button
                       className="btn btn-danger"
                       style={{ padding: "8px 20px", fontSize: "14px" }}
-                      onClick={() => handleDelete(resource.ID, resource.Name)}
+                      onClick={() => handleDelete(user.id, user.username)}
                     >
                       Supprimer
                     </button>
