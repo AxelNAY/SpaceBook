@@ -31,7 +31,10 @@ export default function Navbar() {
   return (
     <>
       <header className="header">
-        <Link to={isAdmin ? "/admin/resources/create" : "/"} className="header-logo">
+        <Link
+          to={!isAuthenticated ? "/" : isAdmin ? "/admin/resources/create" : "/ressources"}
+          className="header-logo"
+        >
           <img src={logo} alt="SpaceBook" />
         </Link>
 
