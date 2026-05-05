@@ -9,25 +9,17 @@ import (
 
 	"spacebook/config"
 	"spacebook/handlers"
+	"spacebook/helpers"
 	"spacebook/models"
 
-	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 )
 
-func setupTestDB() {
-	godotenv.Load("../.env")
-	if config.DB == nil {
-		config.ConnectDatabase()
-	}
-}
-
 func TestRegister(t *testing.T) {
-	setupTestDB()
+	helpers.SetupTestDB()
 
 	e := echo.New()
 
-	// Test successful registration
 	t.Run("successful registration", func(t *testing.T) {
 		payload := map[string]string{
 			"email":    "testregister@test.com",
@@ -57,11 +49,9 @@ func TestRegister(t *testing.T) {
 			t.Error("Expected token in response")
 		}
 
-		// Cleanup
-		config.DB.Where("email = ?", "testregister@test.com").Delete(&models.User{})
+		defer config.DB.Where("email = ?", "testregister@test.com").Delete(&models.User{})
 	})
 
-	// Test registration with missing fields
 	t.Run("missing fields", func(t *testing.T) {
 		payload := map[string]string{
 			"email": "test@test.com",
@@ -80,9 +70,7 @@ func TestRegister(t *testing.T) {
 		}
 	})
 
-	// Test registration with duplicate email
 	t.Run("duplicate email", func(t *testing.T) {
-		// Create first user
 		payload := map[string]string{
 			"email":    "duplicate@test.com",
 			"username": "duplicate1",
@@ -96,7 +84,6 @@ func TestRegister(t *testing.T) {
 		c := e.NewContext(req, rec)
 		handlers.Register(c)
 
-		// Try to create second user with same email
 		payload["username"] = "duplicate2"
 		body, _ = json.Marshal(payload)
 
@@ -110,30 +97,18 @@ func TestRegister(t *testing.T) {
 			t.Errorf("Expected status %d, got %d", http.StatusConflict, rec.Code)
 		}
 
-		// Cleanup
-		config.DB.Where("email = ?", "duplicate@test.com").Delete(&models.User{})
+		defer config.DB.Where("email = ?", "duplicate@test.com").Delete(&models.User{})
 	})
 }
 
 func TestLogin(t *testing.T) {
-	setupTestDB()
+	helpers.SetupTestDB()
 
 	e := echo.New()
 
-	// Create test user
-	payload := map[string]string{
-		"email":    "testlogin@test.com",
-		"username": "testlogin",
-		"password": "password123",
-	}
-	body, _ := json.Marshal(payload)
-	req := httptest.NewRequest(http.MethodPost, "/auth/register", bytes.NewReader(body))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	handlers.Register(c)
+	user := helpers.CreateTestUser(t, "testlogin@test.com", "testlogin")
+	defer config.DB.Delete(&user)
 
-	// Test successful login
 	t.Run("successful login", func(t *testing.T) {
 		loginPayload := map[string]string{
 			"email":    "testlogin@test.com",
@@ -163,7 +138,6 @@ func TestLogin(t *testing.T) {
 		}
 	})
 
-	// Test login with wrong password
 	t.Run("wrong password", func(t *testing.T) {
 		loginPayload := map[string]string{
 			"email":    "testlogin@test.com",
@@ -183,7 +157,6 @@ func TestLogin(t *testing.T) {
 		}
 	})
 
-	// Test login with non-existent user
 	t.Run("non-existent user", func(t *testing.T) {
 		loginPayload := map[string]string{
 			"email":    "nonexistent@test.com",
@@ -202,7 +175,4 @@ func TestLogin(t *testing.T) {
 			t.Errorf("Expected status %d, got %d", http.StatusUnauthorized, rec.Code)
 		}
 	})
-
-	// Cleanup
-	config.DB.Where("email = ?", "testlogin@test.com").Delete(&models.User{})
 }

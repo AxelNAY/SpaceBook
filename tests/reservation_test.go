@@ -10,65 +10,35 @@ import (
 
 	"spacebook/config"
 	"spacebook/handlers"
+	"spacebook/helpers"
 	"spacebook/models"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"golang.org/x/crypto/bcrypt"
 )
 
-func createTestUser(t *testing.T) models.User {
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
-	user := models.User{
-		ID:       uuid.New(),
-		Email:    "reservationtest@test.com",
-		Username: "reservationtest",
-		Password: hashedPassword,
-		Role:     "user",
-	}
-	config.DB.Create(&user)
-	return user
-}
-
-func createTestResource(t *testing.T, capacity int) models.Resource {
-	resource := models.Resource{
-		ID:       uuid.New().String(),
-		Name:     "Test Resource",
-		Type:     "equipment",
-		Category: "printer",
-		Capacity: capacity,
-		Status:   "available",
-	}
-	config.DB.Create(&resource)
-	return resource
-}
-
-func cleanupTestData(userEmail string, resourceName string) {
-	config.DB.Where("resource_id IN (SELECT id FROM resources WHERE name = ?)", resourceName).Delete(&models.Reservation{})
-	config.DB.Where("name = ?", resourceName).Delete(&models.Resource{})
-	config.DB.Where("email = ?", userEmail).Delete(&models.User{})
-}
-
 func TestCreateReservation(t *testing.T) {
-	setupTestDB()
+	helpers.SetupTestDB()
 
 	e := echo.New()
 
-	user := createTestUser(t)
-	resource := createTestResource(t, 2)
+	user := helpers.CreateTestUser(t, "reservationtest@test.com", "reservationtest")
+	resource := helpers.CreateTestResource(t, "Test Resource")
+	defer func() {
+		config.DB.Where("ressource_id = ?", resource.ID).Delete(&models.Reservation{})
+		config.DB.Delete(&resource)
+		config.DB.Delete(&user)
+	}()
 
-	defer cleanupTestData("reservationtest@test.com", "Test Resource")
-
-	// Test successful reservation
 	t.Run("successful reservation", func(t *testing.T) {
-		startAt := time.Now().Add(24 * time.Hour)
-		endAt := startAt.Add(1 * time.Hour)
+		startDatetime := time.Now().Add(24 * time.Hour)
+		endDatetime := startDatetime.Add(1 * time.Hour)
 
 		payload := map[string]interface{}{
-			"user_id":     user.ID.String(),
-			"resource_id": resource.ID,
-			"start_at":    startAt.Format(time.RFC3339),
-			"end_at":      endAt.Format(time.RFC3339),
+			"user_id":        user.ID.String(),
+			"ressource_id":   resource.ID.String(),
+			"start_datetime": startDatetime.Format(time.RFC3339),
+			"end_datetime":   endDatetime.Format(time.RFC3339),
 		}
 		body, _ := json.Marshal(payload)
 
@@ -94,16 +64,15 @@ func TestCreateReservation(t *testing.T) {
 		}
 	})
 
-	// Test reservation with invalid dates
 	t.Run("invalid dates - start after end", func(t *testing.T) {
-		startAt := time.Now().Add(48 * time.Hour)
-		endAt := time.Now().Add(24 * time.Hour) // End before start
+		startDatetime := time.Now().Add(48 * time.Hour)
+		endDatetime := time.Now().Add(24 * time.Hour)
 
 		payload := map[string]interface{}{
-			"user_id":     user.ID.String(),
-			"resource_id": resource.ID,
-			"start_at":    startAt.Format(time.RFC3339),
-			"end_at":      endAt.Format(time.RFC3339),
+			"user_id":        user.ID.String(),
+			"ressource_id":   resource.ID.String(),
+			"start_datetime": startDatetime.Format(time.RFC3339),
+			"end_datetime":   endDatetime.Format(time.RFC3339),
 		}
 		body, _ := json.Marshal(payload)
 
@@ -119,16 +88,15 @@ func TestCreateReservation(t *testing.T) {
 		}
 	})
 
-	// Test reservation with non-existent resource
 	t.Run("non-existent resource", func(t *testing.T) {
-		startAt := time.Now().Add(24 * time.Hour)
-		endAt := startAt.Add(1 * time.Hour)
+		startDatetime := time.Now().Add(24 * time.Hour)
+		endDatetime := startDatetime.Add(1 * time.Hour)
 
 		payload := map[string]interface{}{
-			"user_id":     user.ID.String(),
-			"resource_id": uuid.New().String(),
-			"start_at":    startAt.Format(time.RFC3339),
-			"end_at":      endAt.Format(time.RFC3339),
+			"user_id":        user.ID.String(),
+			"ressource_id":   uuid.New().String(),
+			"start_datetime": startDatetime.Format(time.RFC3339),
+			"end_datetime":   endDatetime.Format(time.RFC3339),
 		}
 		body, _ := json.Marshal(payload)
 
@@ -145,27 +113,28 @@ func TestCreateReservation(t *testing.T) {
 	})
 }
 
-func TestCapacityCheck(t *testing.T) {
-	setupTestDB()
+func TestOverlapCheck(t *testing.T) {
+	helpers.SetupTestDB()
 
 	e := echo.New()
 
-	user := createTestUser(t)
-	// Resource with capacity of 2
-	resource := createTestResource(t, 2)
+	user := helpers.CreateTestUser(t, "overlaptest@test.com", "overlaptest")
+	resource := helpers.CreateTestResource(t, "Overlap Test Resource")
+	defer func() {
+		config.DB.Where("ressource_id = ?", resource.ID).Delete(&models.Reservation{})
+		config.DB.Delete(&resource)
+		config.DB.Delete(&user)
+	}()
 
-	defer cleanupTestData("reservationtest@test.com", "Test Resource")
+	startDatetime := time.Now().Add(72 * time.Hour)
+	endDatetime := startDatetime.Add(1 * time.Hour)
 
-	startAt := time.Now().Add(72 * time.Hour)
-	endAt := startAt.Add(1 * time.Hour)
-
-	// Create first reservation
 	t.Run("first reservation - should succeed", func(t *testing.T) {
 		payload := map[string]interface{}{
-			"user_id":     user.ID.String(),
-			"resource_id": resource.ID,
-			"start_at":    startAt.Format(time.RFC3339),
-			"end_at":      endAt.Format(time.RFC3339),
+			"user_id":        user.ID.String(),
+			"ressource_id":   resource.ID.String(),
+			"start_datetime": startDatetime.Format(time.RFC3339),
+			"end_datetime":   endDatetime.Format(time.RFC3339),
 		}
 		body, _ := json.Marshal(payload)
 
@@ -181,35 +150,12 @@ func TestCapacityCheck(t *testing.T) {
 		}
 	})
 
-	// Create second reservation - same time slot
-	t.Run("second reservation - should succeed (capacity 2)", func(t *testing.T) {
+	t.Run("second overlapping reservation - should fail", func(t *testing.T) {
 		payload := map[string]interface{}{
-			"user_id":     user.ID.String(),
-			"resource_id": resource.ID,
-			"start_at":    startAt.Format(time.RFC3339),
-			"end_at":      endAt.Format(time.RFC3339),
-		}
-		body, _ := json.Marshal(payload)
-
-		req := httptest.NewRequest(http.MethodPost, "/reservations", bytes.NewReader(body))
-		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-
-		handlers.CreateReservation(c)
-
-		if rec.Code != http.StatusCreated {
-			t.Errorf("Expected status %d, got %d", http.StatusCreated, rec.Code)
-		}
-	})
-
-	// Create third reservation - should fail (capacity exceeded)
-	t.Run("third reservation - should fail (capacity exceeded)", func(t *testing.T) {
-		payload := map[string]interface{}{
-			"user_id":     user.ID.String(),
-			"resource_id": resource.ID,
-			"start_at":    startAt.Format(time.RFC3339),
-			"end_at":      endAt.Format(time.RFC3339),
+			"user_id":        user.ID.String(),
+			"ressource_id":   resource.ID.String(),
+			"start_datetime": startDatetime.Format(time.RFC3339),
+			"end_datetime":   endDatetime.Format(time.RFC3339),
 		}
 		body, _ := json.Marshal(payload)
 
@@ -223,25 +169,17 @@ func TestCapacityCheck(t *testing.T) {
 		if rec.Code != http.StatusConflict {
 			t.Errorf("Expected status %d, got %d. Body: %s", http.StatusConflict, rec.Code, rec.Body.String())
 		}
-
-		var response map[string]interface{}
-		json.Unmarshal(rec.Body.Bytes(), &response)
-
-		if response["error"] != "Ressource complète pour ce créneau horaire" {
-			t.Errorf("Expected capacity error message, got: %v", response["error"])
-		}
 	})
 
-	// Reservation at different time slot should succeed
 	t.Run("reservation at different time - should succeed", func(t *testing.T) {
-		differentStart := startAt.Add(2 * time.Hour)
+		differentStart := startDatetime.Add(2 * time.Hour)
 		differentEnd := differentStart.Add(1 * time.Hour)
 
 		payload := map[string]interface{}{
-			"user_id":     user.ID.String(),
-			"resource_id": resource.ID,
-			"start_at":    differentStart.Format(time.RFC3339),
-			"end_at":      differentEnd.Format(time.RFC3339),
+			"user_id":        user.ID.String(),
+			"ressource_id":   resource.ID.String(),
+			"start_datetime": differentStart.Format(time.RFC3339),
+			"end_datetime":   differentEnd.Format(time.RFC3339),
 		}
 		body, _ := json.Marshal(payload)
 

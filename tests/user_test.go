@@ -8,6 +8,7 @@ import (
 
 	"spacebook/config"
 	"spacebook/handlers"
+	"spacebook/helpers"
 	"spacebook/models"
 
 	"github.com/google/uuid"
@@ -15,21 +16,12 @@ import (
 )
 
 func TestGetUsers(t *testing.T) {
-	setupTestDB()
+	helpers.SetupTestDB()
 
 	e := echo.New()
 
-	// Create test user
-	user := models.User{
-		ID:       uuid.New(),
-		Email:    "getuserstest@test.com",
-		Username: "getuserstest",
-		Password: []byte("password"),
-		Role:     "user",
-	}
-	config.DB.Create(&user)
-
-	defer config.DB.Where("email = ?", "getuserstest@test.com").Delete(&models.User{})
+	user := helpers.CreateTestUser(t, "getuserstest@test.com", "getuserstest")
+	defer config.DB.Delete(&user)
 
 	t.Run("get all users", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/admin/users", nil)
@@ -55,27 +47,18 @@ func TestGetUsers(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
-	setupTestDB()
+	helpers.SetupTestDB()
 
 	e := echo.New()
 
 	t.Run("delete user without reservations", func(t *testing.T) {
-		// Create test user
-		userID := uuid.New()
-		user := models.User{
-			ID:       userID,
-			Email:    "deletetest@test.com",
-			Username: "deletetest",
-			Password: []byte("password"),
-			Role:     "user",
-		}
-		config.DB.Create(&user)
+		user := helpers.CreateTestUser(t, "deletetest@test.com", "deletetest")
 
-		req := httptest.NewRequest(http.MethodDelete, "/admin/user/"+userID.String(), nil)
+		req := httptest.NewRequest(http.MethodDelete, "/admin/user/"+user.ID.String(), nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		c.SetParamNames("id")
-		c.SetParamValues(userID.String())
+		c.SetParamValues(user.ID.String())
 
 		err := handlers.DeleteUser(c)
 		if err != nil {
@@ -86,56 +69,36 @@ func TestDeleteUser(t *testing.T) {
 			t.Errorf("Expected status %d, got %d", http.StatusNoContent, rec.Code)
 		}
 
-		// Verify user is deleted
 		var count int64
-		config.DB.Model(&models.User{}).Where("id = ?", userID).Count(&count)
+		config.DB.Model(&models.User{}).Where("id = ?", user.ID).Count(&count)
 		if count != 0 {
 			t.Error("Expected user to be deleted")
 		}
 	})
 
 	t.Run("delete user with reservations - should fail", func(t *testing.T) {
-		// Create test user
-		userID := uuid.New()
-		user := models.User{
-			ID:       userID,
-			Email:    "deletewithres@test.com",
-			Username: "deletewithres",
-			Password: []byte("password"),
-			Role:     "user",
-		}
-		config.DB.Create(&user)
+		user := helpers.CreateTestUser(t, "deletewithres@test.com", "deletewithres")
+		resource := helpers.CreateTestResource(t, "Delete Test Resource")
 
-		// Create test resource
-		resource := models.Resource{
-			ID:       uuid.New().String(),
-			Name:     "Delete Test Resource",
-			Type:     "room",
-			Capacity: 1,
-			Status:   "available",
-		}
-		config.DB.Create(&resource)
-
-		// Create reservation for user
 		reservation := models.Reservation{
-			ID:         uuid.New(),
-			UserID:     userID,
-			ResourceID: uuid.MustParse(resource.ID),
-			Status:     "pending",
+			ID:          uuid.New(),
+			UserID:      user.ID,
+			RessourceID: resource.ID,
+			Status:      "pending",
 		}
 		config.DB.Create(&reservation)
 
 		defer func() {
-			config.DB.Where("id = ?", reservation.ID).Delete(&models.Reservation{})
-			config.DB.Where("id = ?", resource.ID).Delete(&models.Resource{})
-			config.DB.Where("id = ?", userID).Delete(&models.User{})
+			config.DB.Delete(&reservation)
+			config.DB.Delete(&resource)
+			config.DB.Delete(&user)
 		}()
 
-		req := httptest.NewRequest(http.MethodDelete, "/admin/user/"+userID.String(), nil)
+		req := httptest.NewRequest(http.MethodDelete, "/admin/user/"+user.ID.String(), nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		c.SetParamNames("id")
-		c.SetParamValues(userID.String())
+		c.SetParamValues(user.ID.String())
 
 		handlers.DeleteUser(c)
 

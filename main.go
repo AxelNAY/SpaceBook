@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"fmt"
 
 	"spacebook/config"
 	"spacebook/routes"
@@ -20,13 +19,13 @@ func main() {
 	}
 
 	config.ConnectDatabase()
-	fmt.Println("Connection is successful")
 
 	// Initialize Echo app
 	e := echo.New()
 
 	// Adding CORS middleware
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins:     []string{"http://localhost:5173"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
 		AllowHeaders:     []string{"Content-Type", "Authorization", "Accept", "Origin"},
 		AllowCredentials: true,

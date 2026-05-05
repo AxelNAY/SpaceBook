@@ -23,7 +23,7 @@ func GetUserReservations(c echo.Context) error {
 	var reservations []models.Reservation
 
 	if err := config.DB.
-		Preload("Resource").
+		Preload("Ressource").
 		Where("user_id = ?", userId).
 		Order("created_at DESC").
 		Find(&reservations).Error; err != nil {
@@ -46,39 +46,35 @@ func CreateReservation(c echo.Context) error {
 	}
 
 	// Validation des dates
-	if reservation.StartAt.After(reservation.EndAt) || reservation.StartAt.Equal(reservation.EndAt) {
+	if reservation.StartDatetime.After(reservation.EndDatetime) || reservation.StartDatetime.Equal(reservation.EndDatetime) {
 		return c.JSON(http.StatusBadRequest, echo.Map{
 			"error": "La date de début doit être antérieure à la date de fin",
 		})
 	}
 
-	// Récupérer la ressource pour connaître sa capacité
+	// Vérifier que la ressource existe
 	var resource models.Resource
-	if err := config.DB.First(&resource, "id = ?", reservation.ResourceID).Error; err != nil {
+	if err := config.DB.First(&resource, "id = ?", reservation.RessourceID).Error; err != nil {
 		return c.JSON(http.StatusNotFound, echo.Map{
 			"error": "Ressource introuvable",
 		})
 	}
 
-	// Compter les réservations qui chevauchent ce créneau (non rejetées)
+	// Vérifier s'il y a des réservations qui chevauchent ce créneau (non rejetées)
 	var overlappingCount int64
 	if err := config.DB.Model(&models.Reservation{}).
-		Where("resource_id = ?", reservation.ResourceID).
+		Where("ressource_id = ?", reservation.RessourceID).
 		Where("status != ?", "rejected").
-		Where("start_at < ? AND end_at > ?", reservation.EndAt, reservation.StartAt).
+		Where("start_datetime < ? AND end_datetime > ?", reservation.EndDatetime, reservation.StartDatetime).
 		Count(&overlappingCount).Error; err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"error": "Échec de la vérification de disponibilité",
 		})
 	}
 
-	// Vérifier si la capacité est atteinte
-	if int(overlappingCount) >= resource.Capacity {
+	if overlappingCount > 0 {
 		return c.JSON(http.StatusConflict, echo.Map{
-			"error":     "Ressource complète pour ce créneau horaire",
-			"capacity":  resource.Capacity,
-			"booked":    overlappingCount,
-			"available": 0,
+			"error": "Ressource déjà réservée pour ce créneau horaire",
 		})
 	}
 
@@ -106,7 +102,6 @@ func CreateReservation(c echo.Context) error {
 	return c.JSON(http.StatusCreated, reservation)
 }
 
-
 /*
 GET /admin/reservations
 Admin only – list all reservations with User + Resource
@@ -116,7 +111,7 @@ func GetAdminReservations(c echo.Context) error {
 
 	if err := config.DB.
 		Preload("User").
-		Preload("Resource").
+		Preload("Ressource").
 		Order("created_at DESC").
 		Find(&reservations).Error; err != nil {
 
@@ -145,7 +140,7 @@ func ApproveReservation(c echo.Context) error {
 	var reservation models.Reservation
 	if err := config.DB.
 		Preload("User").
-		Preload("Resource").
+		Preload("Ressource").
 		First(&reservation, "id = ?", reservationID).Error; err != nil {
 
 		return c.JSON(http.StatusNotFound, echo.Map{
@@ -153,7 +148,6 @@ func ApproveReservation(c echo.Context) error {
 		})
 	}
 
-	// Update status
 	reservation.Status = "approved"
 	reservation.UpdatedAt = time.Now()
 
@@ -163,7 +157,6 @@ func ApproveReservation(c echo.Context) error {
 		})
 	}
 
-	// Notification for user (UUID pointer)
 	userID := reservation.UserID
 
 	notification := models.Notification{
@@ -180,7 +173,6 @@ func ApproveReservation(c echo.Context) error {
 
 /*
 PUT /admin/reservations/:id/reject
-(Admin optional)
 */
 func RejectReservation(c echo.Context) error {
 	idParam := c.Param("id")

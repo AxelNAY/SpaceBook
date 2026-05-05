@@ -9,8 +9,14 @@ import (
 )
 
 func GetResources(c echo.Context) error {
+	placeID := c.QueryParam("place_id")
+
 	var resources []models.Resource
-	config.DB.Find(&resources)
+	query := config.DB.Preload("Place").Preload("Category")
+	if placeID != "" {
+		query = query.Where("place_id = ?", placeID)
+	}
+	query.Find(&resources)
 	return c.JSON(http.StatusOK, resources)
 }
 
@@ -22,11 +28,12 @@ func CreateResource(c echo.Context) error {
 		})
 	}
 
-	if resource.Type == "room" {
-		resource.Capacity = 1
-		resource.Category = "none"
+	if err := config.DB.Create(&resource).Error; err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Échec de la création de la ressource",
+		})
 	}
-	config.DB.Create(&resource)
+
 	notification := models.Notification{
 		Type:    "resource",
 		Message: "Une nouvelle ressource a été créée",
@@ -35,12 +42,37 @@ func CreateResource(c echo.Context) error {
 	return c.JSON(http.StatusCreated, resource)
 }
 
+func UpdateResource(c echo.Context) error {
+	id := c.Param("id")
+
+	var resource models.Resource
+	if err := config.DB.First(&resource, "id = ?", id).Error; err != nil {
+		return c.JSON(http.StatusNotFound, echo.Map{
+			"error": "Ressource introuvable",
+		})
+	}
+
+	if err := c.Bind(&resource); err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"error": "Données invalides",
+		})
+	}
+
+	if err := config.DB.Save(&resource).Error; err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"error": "Échec de la mise à jour de la ressource",
+		})
+	}
+
+	return c.JSON(http.StatusOK, resource)
+}
+
 func DeleteResource(c echo.Context) error {
 	id := c.Param("id")
 
 	var count int64
 	config.DB.Model(&models.Reservation{}).
-		Where("resource_id = ?", id).
+		Where("ressource_id = ?", id).
 		Count(&count)
 
 	if count > 0 {

@@ -28,6 +28,9 @@ func SetupRoutes(e *echo.Echo) {
 	// Public routes
 	// =====================
 
+	e.GET("/companies", handlers.GetCompanies)
+	e.GET("/places", handlers.GetPlaces)
+	e.GET("/categories", handlers.GetCategories)
 	e.GET("/resources", handlers.GetResources)
 
 	// =====================
@@ -49,8 +52,24 @@ func SetupRoutes(e *echo.Echo) {
 	admin.Use(middleware.JWTAuth)
 	admin.Use(middleware.AdminOnly)
 
+	// Companies
+	admin.POST("/companies", handlers.CreateCompany)
+	admin.PUT("/companies/:id", handlers.UpdateCompany)
+	admin.DELETE("/companies/:id", handlers.DeleteCompany)
+
+	// Places
+	admin.POST("/places", handlers.CreatePlace)
+	admin.PUT("/places/:id", handlers.UpdatePlace)
+	admin.DELETE("/places/:id", handlers.DeletePlace)
+
+	// Categories
+	admin.POST("/categories", handlers.CreateCategory)
+	admin.PUT("/categories/:id", handlers.UpdateCategory)
+	admin.DELETE("/categories/:id", handlers.DeleteCategory)
+
 	// Resources
 	admin.POST("/resources", handlers.CreateResource)
+	admin.PUT("/resources/:id", handlers.UpdateResource)
 	admin.DELETE("/resources/:id", handlers.DeleteResource)
 
 	// Reservations
@@ -60,6 +79,7 @@ func SetupRoutes(e *echo.Echo) {
 
 	// Users
 	admin.GET("/users", handlers.GetUsers)
+	admin.PUT("/users/:id", handlers.UpdateUser)
 	admin.DELETE("/user/:id", handlers.DeleteUser)
 
 	// Notifications

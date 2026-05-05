@@ -8,6 +8,7 @@ import (
 
 	"spacebook/config"
 	"spacebook/handlers"
+	"spacebook/helpers"
 	"spacebook/models"
 
 	"github.com/google/uuid"
@@ -15,37 +16,19 @@ import (
 )
 
 func TestGetUserNotifications(t *testing.T) {
-	setupTestDB()
+	helpers.SetupTestDB()
 
 	e := echo.New()
 
-	// Create test user
-	userID := uuid.New()
-	user := models.User{
-		ID:       userID,
-		Email:    "notiftest@test.com",
-		Username: "notiftest",
-		Password: []byte("password"),
-		Role:     "user",
-	}
-	config.DB.Create(&user)
-
-	// Create test notification for user
-	notification := models.Notification{
-		UserID:  &userID,
-		Type:    "reservation",
-		Message: "Test notification",
-		IsRead:  false,
-	}
-	config.DB.Create(&notification)
-
+	user := helpers.CreateTestUser(t, "notiftest@test.com", "notiftest")
+	notification := helpers.CreateTestNotification(t, &user.ID, "Test notification")
 	defer func() {
-		config.DB.Where("user_id = ?", userID).Delete(&models.Notification{})
-		config.DB.Where("id = ?", userID).Delete(&models.User{})
+		config.DB.Delete(&notification)
+		config.DB.Delete(&user)
 	}()
 
 	t.Run("get user notifications", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/notifications?userId="+userID.String(), nil)
+		req := httptest.NewRequest(http.MethodGet, "/notifications?userId="+user.ID.String(), nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 
@@ -80,19 +63,12 @@ func TestGetUserNotifications(t *testing.T) {
 }
 
 func TestGetAdminNotifications(t *testing.T) {
-	setupTestDB()
+	helpers.SetupTestDB()
 
 	e := echo.New()
 
-	// Create test notification without user (admin notification)
-	notification := models.Notification{
-		Type:    "reservation",
-		Message: "Admin test notification",
-		IsRead:  false,
-	}
-	config.DB.Create(&notification)
-
-	defer config.DB.Where("message = ?", "Admin test notification").Delete(&models.Notification{})
+	notification := helpers.CreateTestNotification(t, nil, "Admin test notification")
+	defer config.DB.Delete(&notification)
 
 	t.Run("get all notifications", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/admin/notifications", nil)
@@ -118,19 +94,12 @@ func TestGetAdminNotifications(t *testing.T) {
 }
 
 func TestMarkNotificationAsRead(t *testing.T) {
-	setupTestDB()
+	helpers.SetupTestDB()
 
 	e := echo.New()
 
-	// Create test notification
-	notification := models.Notification{
-		Type:    "reservation",
-		Message: "Mark as read test",
-		IsRead:  false,
-	}
-	config.DB.Create(&notification)
-
-	defer config.DB.Where("message = ?", "Mark as read test").Delete(&models.Notification{})
+	notification := helpers.CreateTestNotification(t, nil, "Mark as read test")
+	defer config.DB.Delete(&notification)
 
 	t.Run("mark notification as read", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPut, "/admin/notifications/"+notification.ID.String()+"/read", nil)
@@ -148,7 +117,6 @@ func TestMarkNotificationAsRead(t *testing.T) {
 			t.Errorf("Expected status %d, got %d", http.StatusOK, rec.Code)
 		}
 
-		// Verify notification is marked as read
 		var updatedNotif models.Notification
 		config.DB.First(&updatedNotif, "id = ?", notification.ID)
 

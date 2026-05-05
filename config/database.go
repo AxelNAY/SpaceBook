@@ -29,9 +29,14 @@ func ConnectDatabase() {
 	DB = database
 	fmt.Println("✅ Database connected")
 	database.AutoMigrate(
+		&models.Company{},
+		&models.Place{},
+		&models.Category{},
 		&models.User{},
+		&models.PlaceUser{},
 		&models.Resource{},
 		&models.Reservation{},
+		&models.ReservationResource{},
 		&models.Notification{},
 	)
 }
