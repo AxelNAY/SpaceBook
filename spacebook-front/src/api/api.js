@@ -17,15 +17,26 @@ api.interceptors.request.use((config) => {
 export const login = (data) => api.post("/auth/login", data);
 export const register = (data) => api.post("/auth/register", data);
 
+// Companies
+export const getCompanies = () => api.get("/companies");
+
+// Places
+export const getPlaces = (companyId) =>
+  api.get(`/places${companyId ? `?company_id=${companyId}` : ""}`);
+
+// Categories
+export const getCategories = () => api.get("/categories");
+
 // Resources
-export const getResources = () => api.get("/resources");
+export const getResources = (placeId) =>
+  api.get(`/resources${placeId ? `?place_id=${placeId}` : ""}`);
 
 // Reservations (user)
 export const createReservation = (data) =>
   api.post("/reservations", {
     ...data,
-    start_at: new Date(data.start_at).toISOString(),
-    end_at: new Date(data.end_at).toISOString(),
+    start_datetime: new Date(data.start_datetime).toISOString(),
+    end_datetime: new Date(data.end_datetime).toISOString(),
   });
 
 export const getUserReservations = (userId) =>
@@ -39,6 +50,20 @@ export const getUserNotifications = (userId) =>
 export const getAdminNotifications = () => api.get("/admin/notifications");
 export const markNotificationRead = (id) =>
   api.put(`/admin/notifications/${id}/read`);
+
+// Admin - Companies
+export const createAdminCompany = (data) => api.post("/admin/companies", data);
+export const deleteAdminCompany = (id) => api.delete(`/admin/companies/${id}`);
+
+// Admin - Places
+export const createAdminPlace = (data) => api.post("/admin/places", data);
+export const deleteAdminPlace = (id) => api.delete(`/admin/places/${id}`);
+
+// Admin - Categories
+export const createAdminCategory = (data) =>
+  api.post("/admin/categories", data);
+export const deleteAdminCategory = (id) =>
+  api.delete(`/admin/categories/${id}`);
 
 // Admin - Resources
 export const createAdminResource = (data) => api.post("/admin/resources", data);
