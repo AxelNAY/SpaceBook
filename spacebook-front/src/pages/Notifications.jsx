@@ -13,7 +13,7 @@ export default function Notifications() {
       if (isAdmin) {
         res = await getAdminNotifications();
       } else {
-        res = await getUserNotifications(user?.id);
+        res = await getUserNotifications();
       }
       setNotifications(res.data || []);
     } catch (err) {
@@ -82,20 +82,20 @@ export default function Notifications() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ backgroundColor: "var(--primary-blue)", color: "white" }}>
-                <th style={{ padding: "16px 24px", textAlign: "left", fontWeight: 600 }}>
+                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, whiteSpace: "nowrap" }}>
                   Type
                 </th>
-                <th style={{ padding: "16px 24px", textAlign: "left", fontWeight: 600 }}>
+                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, width: "100%" }}>
                   Message
                 </th>
-                <th style={{ padding: "16px 24px", textAlign: "left", fontWeight: 600 }}>
+                <th style={{ padding: "12px 16px", textAlign: "left", fontWeight: 600, whiteSpace: "nowrap" }}>
                   Date
                 </th>
-                <th style={{ padding: "16px 24px", textAlign: "center", fontWeight: 600 }}>
+                <th style={{ padding: "12px 16px", textAlign: "center", fontWeight: 600, whiteSpace: "nowrap" }}>
                   Statut
                 </th>
                 {isAdmin && (
-                  <th style={{ padding: "16px 24px", textAlign: "center", fontWeight: 600 }}>
+                  <th style={{ padding: "12px 16px", textAlign: "center", fontWeight: 600, whiteSpace: "nowrap" }}>
                     Action
                   </th>
                 )}
@@ -104,22 +104,22 @@ export default function Notifications() {
             <tbody>
               {notifications.map((notification) => (
                 <tr
-                  key={notification.ID}
+                  key={notification.id}
                   style={{
                     borderBottom: "1px solid #e5e5e5",
                     backgroundColor: notification.is_read ? "transparent" : "#f0f7ff",
                   }}
                 >
-                  <td style={{ padding: "16px 24px" }}>
+                  <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}>
                     {getTypeBadge(notification.type)}
                   </td>
-                  <td style={{ padding: "16px 24px", fontWeight: notification.is_read ? 400 : 600 }}>
+                  <td style={{ padding: "12px 16px", fontWeight: notification.is_read ? 400 : 600 }}>
                     {notification.message}
                   </td>
-                  <td style={{ padding: "16px 24px", fontSize: "14px", color: "var(--text-gray)" }}>
+                  <td style={{ padding: "12px 16px", fontSize: "13px", color: "var(--text-gray)", whiteSpace: "nowrap" }}>
                     {formatDate(notification.created_at)}
                   </td>
-                  <td style={{ padding: "16px 24px", textAlign: "center" }}>
+                  <td style={{ padding: "12px 16px", textAlign: "center", whiteSpace: "nowrap" }}>
                     {notification.is_read ? (
                       <span className="badge badge-available">Lu</span>
                     ) : (
@@ -127,12 +127,12 @@ export default function Notifications() {
                     )}
                   </td>
                   {isAdmin && (
-                    <td style={{ padding: "16px 24px", textAlign: "center" }}>
+                    <td style={{ padding: "12px 16px", textAlign: "center", whiteSpace: "nowrap" }}>
                       {!notification.is_read && (
                         <button
                           className="btn btn-primary"
-                          style={{ padding: "8px 16px", fontSize: "14px" }}
-                          onClick={() => handleMarkAsRead(notification.ID)}
+                          style={{ padding: "6px 12px", fontSize: "13px" }}
+                          onClick={() => handleMarkAsRead(notification.id)}
                         >
                           Marquer lu
                         </button>

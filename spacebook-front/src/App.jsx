@@ -10,8 +10,13 @@ import AdminCreateResource from "./pages/AdminCreateResource";
 import AdminResources from "./pages/AdminResources";
 import AdminReservations from "./pages/AdminReservations";
 import AdminUsers from "./pages/AdminUsers";
+import AdminPlaces from "./pages/AdminPlaces";
+import AdminCreatePlace from "./pages/AdminCreatePlace";
 
-function ProtectedRoute({ children, adminOnly = false }) {
+const USER_HOME = "/ressources";
+const ADMIN_HOME = "/admin/reservations";
+
+function ProtectedRoute({ children, adminOnly = false, userOnly = false }) {
   const { isAuthenticated, isAdmin } = useAuth();
 
   if (!isAuthenticated) {
@@ -19,28 +24,36 @@ function ProtectedRoute({ children, adminOnly = false }) {
   }
 
   if (adminOnly && !isAdmin) {
-    return <Navigate to="/ressources" replace />;
+    return <Navigate to={USER_HOME} replace />;
+  }
+
+  if (userOnly && isAdmin) {
+    return <Navigate to={ADMIN_HOME} replace />;
   }
 
   return children;
 }
 
 function AppRoutes() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
 
   return (
     <Routes>
-      {/* Page d'accueil - Welcome si non connecte, Ressources si connecte */}
+      {/* Page d'accueil - redirige vers la home du rôle si connecté */}
       <Route
         path="/"
-        element={isAuthenticated ? <Home /> : <Welcome />}
+        element={
+          !isAuthenticated ? <Welcome /> :
+          isAdmin ? <Navigate to={ADMIN_HOME} replace /> :
+          <Navigate to={USER_HOME} replace />
+        }
       />
 
-      {/* Pages accessibles uniquement si connecte */}
+      {/* Pages utilisateur uniquement */}
       <Route
         path="/ressources"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute userOnly>
             <Home />
           </ProtectedRoute>
         }
@@ -49,7 +62,7 @@ function AppRoutes() {
       <Route
         path="/reserver"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute userOnly>
             <Reservations />
           </ProtectedRoute>
         }
@@ -58,7 +71,7 @@ function AppRoutes() {
       <Route
         path="/mes-reservations"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute userOnly>
             <MesReservations />
           </ProtectedRoute>
         }
@@ -106,6 +119,24 @@ function AppRoutes() {
         element={
           <ProtectedRoute adminOnly>
             <AdminUsers />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/places"
+        element={
+          <ProtectedRoute adminOnly>
+            <AdminPlaces />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/places/create"
+        element={
+          <ProtectedRoute adminOnly>
+            <AdminCreatePlace />
           </ProtectedRoute>
         }
       />

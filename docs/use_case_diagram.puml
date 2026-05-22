@@ -1,0 +1,178 @@
+@startuml SpaceBook - Diagramme de cas d'utilisation
+
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam backgroundColor #FAFAFA
+skinparam usecase {
+  BackgroundColor #EEF4FF
+  BorderColor #3B82F6
+  FontSize 13
+}
+skinparam actor {
+  BackgroundColor #DBEAFE
+  BorderColor #1D4ED8
+}
+skinparam ArrowColor #374151
+skinparam NoteBackgroundColor #FEF9C3
+skinparam NoteBorderColor #CA8A04
+
+left to right direction
+
+' ─────────────────────────────────────────
+' Acteurs
+' ─────────────────────────────────────────
+actor "Visiteur"       as Visitor
+actor "Utilisateur"    as User
+actor "Administrateur" as Admin
+
+' L'utilisateur hérite du visiteur
+' L'admin hérite de l'utilisateur
+User  --|> Visitor
+Admin --|> User
+
+' ─────────────────────────────────────────
+' Système
+' ─────────────────────────────────────────
+rectangle "SpaceBook" {
+
+  ' ── Authentification ────────────────────────────
+  package "Authentification" {
+    usecase "Consulter la page d'accueil" as UC_Home
+    usecase "S'inscrire"                  as UC_Register
+    usecase "Se connecter"                as UC_Login
+    usecase "Se déconnecter"              as UC_Logout
+  }
+
+  ' ── Compte ──────────────────────────────────────
+  package "Mon Compte" {
+    usecase "Consulter ses informations"  as UC_ViewMyInfos
+    usecase "Modifier ses informations"   as UC_EditMyInfos
+    usecase "Supprimer son compte"        as UC_DeleteMyAccount
+  }
+  UC_EditMyInfos       ..> UC_ViewMyInfos    : <<extend>>
+  UC_DeleteMyAccount   ..> UC_ViewMyInfos    : <<extend>>
+
+  ' ── Notifications ───────────────────────────────
+  package "Notifications" {
+    usecase "Consulter ses notifications"        as UC_ViewNotifs
+    usecase "Marquer une notification comme lue" as UC_MarkRead
+  }
+  UC_MarkRead ..> UC_ViewNotifs : <<extend>>
+
+  ' ── Ressources ──────────────────────────────────
+  package "Ressources" {
+    usecase "Consulter les ressources"   as UC_ViewResources
+    usecase "Filtrer les ressources\n(type, lieu)" as UC_FilterResources
+    usecase "Créer une ressource"        as UC_CreateResource
+    usecase "Supprimer une ressource"    as UC_DeleteResource
+  }
+  UC_FilterResources ..> UC_ViewResources  : <<extend>>
+  UC_DeleteResource  ..> UC_ViewResources  : <<include>>
+
+  ' ── Réservations ────────────────────────────────
+  package "Réservations" {
+    usecase "Sélectionner des ressources"                as UC_SelectResources
+    usecase "Créer une réservation"                      as UC_CreateResa
+    usecase "Consulter ses réservations"                 as UC_ViewMyResas
+    usecase "Filtrer ses réservations\n(ressource, statut, date)" as UC_FilterMyResas
+    usecase "Voir le détail d'une réservation"           as UC_ViewDetailResa
+    usecase "Annuler une réservation\n(ou une ressource)" as UC_CancelResa
+    usecase "Consulter toutes les réservations"          as UC_ViewAllResas
+    usecase "Filtrer les réservations\n(ressource, lieu, statut, utilisateur, date)" as UC_FilterAllResas
+    usecase "Accepter une réservation"                   as UC_ApproveResa
+    usecase "Refuser une réservation"                    as UC_RejectResa
+  }
+  UC_SelectResources ..> UC_ViewResources  : <<include>>
+  UC_CreateResa      ..> UC_SelectResources : <<include>>
+
+  UC_FilterMyResas   ..> UC_ViewMyResas    : <<extend>>
+  UC_ViewDetailResa  ..> UC_ViewMyResas    : <<extend>>
+  UC_CancelResa      ..> UC_ViewMyResas    : <<extend>>
+
+  UC_FilterAllResas  ..> UC_ViewAllResas   : <<extend>>
+  UC_ViewDetailResa  ..> UC_ViewAllResas   : <<extend>>
+  UC_ApproveResa     ..> UC_ViewAllResas   : <<extend>>
+  UC_RejectResa      ..> UC_ViewAllResas   : <<extend>>
+
+  ' ── Lieux ───────────────────────────────────────
+  package "Gestion des lieux" {
+    usecase "Consulter les lieux"              as UC_ViewPlaces
+    usecase "Créer un lieu"                    as UC_CreatePlace
+    usecase "Voir le détail d'un lieu"         as UC_ViewPlaceDetail
+    usecase "Supprimer un lieu"                as UC_DeletePlace
+    usecase "Transférer une ressource\nvers un autre lieu" as UC_TransferResource
+    usecase "Transférer un utilisateur\nvers un autre lieu" as UC_TransferUser
+  }
+  UC_CreatePlace      ..> UC_ViewPlaces       : <<extend>>
+  UC_ViewPlaceDetail  ..> UC_ViewPlaces       : <<extend>>
+  UC_DeletePlace      ..> UC_ViewPlaceDetail  : <<extend>>
+  UC_TransferResource ..> UC_ViewPlaceDetail  : <<extend>>
+  UC_TransferUser     ..> UC_ViewPlaceDetail  : <<extend>>
+
+  ' ── Utilisateurs ────────────────────────────────
+  package "Gestion des utilisateurs" {
+    usecase "Consulter les utilisateurs\n(filtrer par statut, lieu)" as UC_ViewUsers
+    usecase "Voir le détail d'un utilisateur"  as UC_ViewUserDetail
+    usecase "Assigner un utilisateur à un lieu" as UC_AssignUserPlace
+    usecase "Promouvoir un utilisateur\n(→ Administrateur)" as UC_PromoteUser
+    usecase "Supprimer un utilisateur"         as UC_DeleteUser
+  }
+  UC_ViewUserDetail  ..> UC_ViewUsers        : <<extend>>
+  UC_AssignUserPlace ..> UC_ViewUserDetail   : <<extend>>
+  UC_PromoteUser     ..> UC_ViewUserDetail   : <<extend>>
+  UC_DeleteUser      ..> UC_ViewUserDetail   : <<extend>>
+}
+
+' ─────────────────────────────────────────
+' Associations — Visiteur
+' ─────────────────────────────────────────
+Visitor -- UC_Home
+Visitor -- UC_Register
+Visitor -- UC_Login
+
+' ─────────────────────────────────────────
+' Associations — Utilisateur
+' ─────────────────────────────────────────
+User -- UC_Logout
+User -- UC_ViewMyInfos
+User -- UC_ViewNotifs
+User -- UC_ViewResources
+User -- UC_CreateResa
+User -- UC_ViewMyResas
+
+' ─────────────────────────────────────────
+' Associations — Administrateur
+' ─────────────────────────────────────────
+Admin -- UC_CreateResource
+Admin -- UC_DeleteResource
+Admin -- UC_ViewAllResas
+Admin -- UC_ViewPlaces
+Admin -- UC_ViewUsers
+
+' ─────────────────────────────────────────
+' Notes
+' ─────────────────────────────────────────
+note bottom of UC_CreateResa
+  Une réservation peut porter
+  sur plusieurs ressources.
+  Statut initial : "En Attente"
+end note
+
+note bottom of UC_CancelResa
+  L'utilisateur peut annuler
+  la réservation entière
+  ou seulement une ressource
+end note
+
+note bottom of UC_PromoteUser
+  Passe le rôle d'un utilisateur
+  de "Utilisateur" à "Administrateur"
+end note
+
+note bottom of UC_DeletePlace
+  Suppression en cascade :
+  ressources et associations
+  utilisateurs supprimées
+end note
+
+@enduml

@@ -10,11 +10,10 @@ import (
 )
 
 func GetUserNotifications(c echo.Context) error {
-	userId := c.QueryParam("userId")
-
-	if userId == "" {
-		return c.JSON(http.StatusBadRequest, echo.Map{
-			"error": "userId est requis",
+	userId := c.Get("user_id")
+	if userId == nil {
+		return c.JSON(http.StatusUnauthorized, echo.Map{
+			"error": "Non authentifié",
 		})
 	}
 

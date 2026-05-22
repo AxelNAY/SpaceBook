@@ -31,7 +31,6 @@ func SetupRoutes(e *echo.Echo) {
 	e.GET("/companies", handlers.GetCompanies)
 	e.GET("/places", handlers.GetPlaces)
 	e.GET("/categories", handlers.GetCategories)
-	e.GET("/resources", handlers.GetResources)
 
 	// =====================
 	// Protected routes (authenticated users)
@@ -40,46 +39,69 @@ func SetupRoutes(e *echo.Echo) {
 	protected := e.Group("")
 	protected.Use(middleware.JWTAuth)
 
-	protected.POST("/reservations", handlers.CreateReservation)
+	protected.GET("/resources", handlers.GetResources)
+	protected.POST("/reservation", handlers.CreateSimpleReservation)
+	protected.POST("/reservation_group", handlers.CreateGroupReservation)
 	protected.GET("/reservations", handlers.GetUserReservations)
 	protected.GET("/notifications", handlers.GetUserNotifications)
 
 	// =====================
-	// Admin routes (authenticated + admin role)
+	// Superadmin routes (authenticated + superadmin role)
+	// =====================
+
+	superadmin := e.Group("/superadmin")
+	superadmin.Use(middleware.JWTAuth)
+	superadmin.Use(middleware.SuperadminOnly)
+
+	// Companies
+	superadmin.POST("/companies", handlers.CreateCompany)
+	superadmin.PUT("/companies/:id", handlers.UpdateCompany)
+	superadmin.DELETE("/companies/:id", handlers.DeleteCompany)
+
+	// Places
+	superadmin.POST("/places", handlers.CreatePlace)
+	superadmin.PUT("/places/:id", handlers.UpdatePlace)
+	superadmin.DELETE("/places/:id", handlers.DeletePlace)
+
+	// =====================
+	// Admin routes (authenticated + admin role, scopé à l'entreprise)
 	// =====================
 
 	admin := e.Group("/admin")
 	admin.Use(middleware.JWTAuth)
 	admin.Use(middleware.AdminOnly)
 
-	// Companies
-	admin.POST("/companies", handlers.CreateCompany)
-	admin.PUT("/companies/:id", handlers.UpdateCompany)
-	admin.DELETE("/companies/:id", handlers.DeleteCompany)
-
-	// Places
-	admin.POST("/places", handlers.CreatePlace)
-	admin.PUT("/places/:id", handlers.UpdatePlace)
-	admin.DELETE("/places/:id", handlers.DeletePlace)
+	// Places (scopées à l'entreprise de l'admin)
+	admin.GET("/places", handlers.AdminGetPlaces)
+	admin.GET("/places/:id", handlers.AdminGetPlaceDetails)
+	admin.POST("/places", handlers.AdminCreatePlace)
+	admin.PUT("/places/:id", handlers.AdminUpdatePlace)
+	admin.DELETE("/places/:id", handlers.AdminDeletePlace)
 
 	// Categories
 	admin.POST("/categories", handlers.CreateCategory)
 	admin.PUT("/categories/:id", handlers.UpdateCategory)
 	admin.DELETE("/categories/:id", handlers.DeleteCategory)
 
-	// Resources
-	admin.POST("/resources", handlers.CreateResource)
-	admin.PUT("/resources/:id", handlers.UpdateResource)
-	admin.DELETE("/resources/:id", handlers.DeleteResource)
+	// Resources (scopées à l'entreprise de l'admin)
+	admin.GET("/resources", handlers.AdminGetResources)
+	admin.POST("/resources", handlers.AdminCreateResource)
+	admin.PUT("/resources/:id", handlers.AdminUpdateResource)
+	admin.DELETE("/resources/:id", handlers.AdminDeleteResource)
 
-	// Reservations
+	// Reservations (scopées à l'entreprise de l'admin)
 	admin.GET("/reservations", handlers.GetAdminReservations)
 	admin.PUT("/reservations/:id/approve", handlers.ApproveReservation)
 	admin.PUT("/reservations/:id/reject", handlers.RejectReservation)
+	admin.PUT("/reservations/:id/resources/approve", handlers.ApproveGroupReservationResources)
+	admin.PUT("/reservations/:id/resources/reject", handlers.RejectGroupReservationResources)
 
-	// Users
+	// Users (scopés à l'entreprise de l'admin)
 	admin.GET("/users", handlers.GetUsers)
-	admin.PUT("/users/:id", handlers.UpdateUser)
+	admin.PUT("/users/accept/:id", handlers.AcceptUser)
+	admin.PUT("/users/refuse/:id", handlers.RefuseUser)
+	admin.PUT("/users/promote/:id", handlers.PromoteUser)
+	admin.PUT("/users/:id/place", handlers.AssignUserPlace)
 	admin.DELETE("/user/:id", handlers.DeleteUser)
 
 	// Notifications

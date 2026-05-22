@@ -65,7 +65,7 @@ export default function LoginModal({ onClose, onSwitchToRegister }) {
             required
           />
 
-          <div style={{ textAlign: "center", marginTop: "24px" }}>
+          <div style={{ textAlign: "center", marginTop: "12px" }}>
             <button
               type="submit"
               className="btn btn-danger"
@@ -76,7 +76,7 @@ export default function LoginModal({ onClose, onSwitchToRegister }) {
           </div>
         </form>
 
-        <p style={{ textAlign: "center", marginTop: "16px" }}>
+        <p style={{ textAlign: "center", marginTop: "10px" }}>
           Pas encore de compte ?{" "}
           <button
             onClick={onSwitchToRegister}

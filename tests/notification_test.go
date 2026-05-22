@@ -17,20 +17,19 @@ import (
 
 func TestGetUserNotifications(t *testing.T) {
 	helpers.SetupTestDB()
-
 	e := echo.New()
 
-	user := helpers.CreateTestUser(t, "notiftest@test.com", "notiftest")
-	notification := helpers.CreateTestNotification(t, &user.ID, "Test notification")
-	defer func() {
-		config.DB.Delete(&notification)
-		config.DB.Delete(&user)
-	}()
+	t.Run("get_user_notifications", func(t *testing.T) {
+		id := uuid.New().String()[:8]
+		user := helpers.CreateTestUser(t, "notif_"+id+"@test.com", "notif_"+id)
+		t.Cleanup(func() { config.DB.Delete(&user) })
+		notification := helpers.CreateTestNotification(t, &user.ID, "Test notification "+id)
+		t.Cleanup(func() { config.DB.Delete(&notification) })
 
-	t.Run("get user notifications", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/notifications?userId="+user.ID.String(), nil)
+		req := httptest.NewRequest(http.MethodGet, "/notifications", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
+		c.Set("user_id", user.ID.String())
 
 		err := handlers.GetUserNotifications(c)
 		if err != nil {
@@ -43,37 +42,39 @@ func TestGetUserNotifications(t *testing.T) {
 
 		var notifications []models.Notification
 		json.Unmarshal(rec.Body.Bytes(), &notifications)
-
 		if len(notifications) == 0 {
 			t.Error("Expected at least one notification")
 		}
 	})
 
-	t.Run("missing userId parameter", func(t *testing.T) {
+	t.Run("missing_auth_context", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/notifications", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 
 		handlers.GetUserNotifications(c)
 
-		if rec.Code != http.StatusBadRequest {
-			t.Errorf("Expected status %d, got %d", http.StatusBadRequest, rec.Code)
+		if rec.Code != http.StatusUnauthorized {
+			t.Errorf("Expected status %d, got %d", http.StatusUnauthorized, rec.Code)
 		}
 	})
 }
 
 func TestGetAdminNotifications(t *testing.T) {
 	helpers.SetupTestDB()
-
 	e := echo.New()
 
-	notification := helpers.CreateTestNotification(t, nil, "Admin test notification")
-	defer config.DB.Delete(&notification)
+	t.Run("get_admin_notifications", func(t *testing.T) {
+		id := uuid.New().String()[:8]
+		admin := helpers.CreateTestAdmin(t, "admin_notif_"+id+"@test.com", "admin_notif_"+id)
+		t.Cleanup(func() { config.DB.Delete(&admin) })
+		notification := helpers.CreateTestNotification(t, &admin.ID, "Admin test notification "+id)
+		t.Cleanup(func() { config.DB.Delete(&notification) })
 
-	t.Run("get all notifications", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/admin/notifications", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
+		c.Set("user_id", admin.ID)
 
 		err := handlers.GetAdminNotifications(c)
 		if err != nil {
@@ -86,7 +87,6 @@ func TestGetAdminNotifications(t *testing.T) {
 
 		var notifications []models.Notification
 		json.Unmarshal(rec.Body.Bytes(), &notifications)
-
 		if len(notifications) == 0 {
 			t.Error("Expected at least one notification")
 		}
@@ -95,13 +95,13 @@ func TestGetAdminNotifications(t *testing.T) {
 
 func TestMarkNotificationAsRead(t *testing.T) {
 	helpers.SetupTestDB()
-
 	e := echo.New()
 
-	notification := helpers.CreateTestNotification(t, nil, "Mark as read test")
-	defer config.DB.Delete(&notification)
+	t.Run("mark_notification_as_read", func(t *testing.T) {
+		id := uuid.New().String()[:8]
+		notification := helpers.CreateTestNotification(t, nil, "Mark as read test "+id)
+		t.Cleanup(func() { config.DB.Delete(&notification) })
 
-	t.Run("mark notification as read", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPut, "/admin/notifications/"+notification.ID.String()+"/read", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
@@ -119,13 +119,12 @@ func TestMarkNotificationAsRead(t *testing.T) {
 
 		var updatedNotif models.Notification
 		config.DB.First(&updatedNotif, "id = ?", notification.ID)
-
 		if !updatedNotif.IsRead {
 			t.Error("Expected notification to be marked as read")
 		}
 	})
 
-	t.Run("non-existent notification", func(t *testing.T) {
+	t.Run("non_existent_notification", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPut, "/admin/notifications/"+uuid.New().String()+"/read", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)

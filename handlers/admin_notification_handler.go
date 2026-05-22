@@ -9,10 +9,15 @@ import (
 )
 
 func GetAdminNotifications(c echo.Context) error {
-	var notifications []models.Notification
+	userId := c.Get("user_id")
+	if userId == nil {
+		return c.JSON(http.StatusUnauthorized, echo.Map{
+			"error": "Non authentifié",
+		})
+	}
 
-	// Latest notifications first
-	config.DB.Order("created_at desc").Find(&notifications)
+	var notifications []models.Notification
+	config.DB.Where("user_id = ?", userId).Order("created_at desc").Find(&notifications)
 
 	return c.JSON(http.StatusOK, notifications)
 }

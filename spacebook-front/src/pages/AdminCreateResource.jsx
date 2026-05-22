@@ -1,35 +1,46 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { createAdminResource } from "../api/api";
+import { createAdminResource, getAdminPlaces, getCategories } from "../api/api";
 
 export default function AdminCreateResource() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
-    type: "room",
-    category: "",
-    capacity: 1,
+    place_id: "",
+    category_id: "",
   });
+  const [places, setPlaces] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    getAdminPlaces().then((res) => setPlaces(res.data)).catch(() => {});
+    getCategories().then((res) => setCategories(res.data)).catch(() => {});
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess(false);
 
+    if (!form.place_id) {
+      setError("Veuillez sélectionner un lieu");
+      return;
+    }
+
     try {
       await createAdminResource(form);
       setSuccess(true);
       setTimeout(() => navigate("/admin/resources"), 1500);
     } catch (err) {
-      setError(err.response?.data?.error || "Erreur lors de la creation");
+      setError(err.response?.data?.error || "Erreur lors de la création");
     }
   };
 
   return (
     <div className="page-container">
-      <h1 className="page-title">Creation de ressource</h1>
+      <h1 className="page-title">Création de ressource</h1>
 
       <div className="card" style={{ maxWidth: "500px", margin: "0 auto", padding: "32px" }}>
         {error && (
@@ -40,7 +51,7 @@ export default function AdminCreateResource() {
 
         {success && (
           <p style={{ color: "var(--success-green)", textAlign: "center", marginBottom: "16px" }}>
-            Ressource creee avec succes !
+            Ressource créée avec succès !
           </p>
         )}
 
@@ -57,55 +68,38 @@ export default function AdminCreateResource() {
             required
           />
 
-          <div style={{ display: "flex", gap: "16px" }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: "block", marginBottom: "8px", fontWeight: 600 }}>
-                Type
-              </label>
-              <select
-                className="form-select"
-                value={form.type}
-                onChange={(e) => setForm({ ...form, type: e.target.value })}
-              >
-                <option value="room">Salle</option>
-                <option value="equipment">Equipement</option>
-              </select>
-            </div>
-
-            <div style={{ flex: 1 }}>
-              <label style={{ display: "block", marginBottom: "8px", fontWeight: 600 }}>
-                Capacite
-              </label>
-              <input
-                type="number"
-                className="form-input"
-                value={form.capacity}
-                onChange={(e) => setForm({ ...form, capacity: parseInt(e.target.value) || 1 })}
-                min="1"
-              />
-            </div>
-          </div>
-
           <label style={{ display: "block", marginBottom: "8px", fontWeight: 600 }}>
-            Categorie
+            Lieu
           </label>
           <select
             className="form-select"
-            value={form.category}
-            onChange={(e) => setForm({ ...form, category: e.target.value })}
+            value={form.place_id}
+            onChange={(e) => setForm({ ...form, place_id: e.target.value })}
+            required
           >
-            <option value="">Selectionner une categorie</option>
-            <option value="printer">Imprimante</option>
-            <option value="projector">Projecteur</option>
-            <option value="computer">Ordinateur</option>
-            <option value="conference">Conference</option>
-            <option value="meeting">Reunion</option>
-            <option value="other">Autre</option>
+            <option value="">Sélectionner un lieu</option>
+            {places.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+
+          <label style={{ display: "block", marginBottom: "8px", fontWeight: 600 }}>
+            Catégorie
+          </label>
+          <select
+            className="form-select"
+            value={form.category_id}
+            onChange={(e) => setForm({ ...form, category_id: e.target.value })}
+          >
+            <option value="">Sélectionner une catégorie</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
           </select>
 
           <div style={{ textAlign: "center", marginTop: "24px" }}>
             <button type="submit" className="btn btn-primary">
-              Creer la ressource
+              Créer la ressource
             </button>
           </div>
         </form>

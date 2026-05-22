@@ -12,9 +12,10 @@ import (
 )
 
 type JWTClaims struct {
-	UserID uuid.UUID `json:"user_id"`
-	Email  string    `json:"email"`
-	Role   string    `json:"role"`
+	UserID    uuid.UUID `json:"user_id"`
+	Email     string    `json:"email"`
+	Role      string    `json:"role"`
+	CompanyID string    `json:"company_id,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -26,11 +27,12 @@ func getJWTSecret() []byte {
 	return []byte(secret)
 }
 
-func GenerateToken(userID uuid.UUID, email, role string) (string, error) {
+func GenerateToken(userID uuid.UUID, email, role, companyID string) (string, error) {
 	claims := JWTClaims{
-		UserID: userID,
-		Email:  email,
-		Role:   role,
+		UserID:    userID,
+		Email:     email,
+		Role:      role,
+		CompanyID: companyID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -78,6 +80,7 @@ func JWTAuth(next echo.HandlerFunc) echo.HandlerFunc {
 		c.Set("user_id", claims.UserID)
 		c.Set("email", claims.Email)
 		c.Set("role", claims.Role)
+		c.Set("company_id", claims.CompanyID)
 
 		return next(c)
 	}
