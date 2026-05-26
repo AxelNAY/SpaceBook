@@ -26,3 +26,6 @@ spacebook
 # Project specific
 maquettes/
 curl_commands.txt
+
+# Architecture diagram (internal version with sensitive details)
+architecture.svg
